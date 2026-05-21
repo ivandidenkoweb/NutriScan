@@ -264,11 +264,36 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || (lang === 'ua' ? 'Сталася помилка при аналізі ШІ.' : 'An error occurred during AI analysis.'));
+        let errorMsg = lang === 'ua' ? 'Помилка сервера.' : 'Server error occurred.';
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errData = await response.json();
+          errorMsg = errData.error || errorMsg;
+        } else {
+          const respText = await response.text();
+          console.error('Non-JSON error response:', respText);
+          if (response.status === 404) {
+            errorMsg = lang === 'ua' 
+              ? 'Ендпоінт /api/analyze-food не знайдено (код 404). Можливо, сервер перезапускається або не підтримує цей запит.' 
+              : 'Endpoint /api/analyze-food not found (404). Node server is reloading or misconfigured.';
+          } else {
+            errorMsg = lang === 'ua'
+              ? `Помилка сервера (код ${response.status}). Будь ласка, перевірте, чи встановлено API-ключ GEMINI_API_KEY у Settings > Secrets.`
+              : `Server error (code ${response.status}). Keep in mind you must configure GEMINI_API_KEY in the Settings > Secrets tab first.`;
+          }
+        }
+        throw new Error(errorMsg);
       }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(lang === 'ua'
+          ? 'Отримано некоректну відповідь (не JSON) від сервера.'
+          : 'Invalid non-JSON response from the server.');
+      }
+
+      const data = await response.json();
 
       setName(data.name || '');
       const parsedWeight = Number(data.weightGrams) || 0;
@@ -324,11 +349,36 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || (lang === 'ua' ? 'Сталася помилка при аналізі ШІ.' : 'An error occurred during AI analysis.'));
+        let errorMsg = lang === 'ua' ? 'Помилка сервера.' : 'Server error occurred.';
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errData = await response.json();
+          errorMsg = errData.error || errorMsg;
+        } else {
+          const respText = await response.text();
+          console.error('Non-JSON error response:', respText);
+          if (response.status === 404) {
+            errorMsg = lang === 'ua' 
+              ? 'Ендпоінт /api/analyze-food-text не знайдено (код 404). Сервер перезапускається або конфігурується.' 
+              : 'Endpoint /api/analyze-food-text not found (404). Node server starts or misconfigured.';
+          } else {
+            errorMsg = lang === 'ua'
+              ? `Помилка сервера (код ${response.status}). Будь ласка, перевірте встановлений API-ключ GEMINI_API_KEY в меню Settings.`
+              : `Server error (code ${response.status}). Check if GEMINI_API_KEY is properly added under Settings > Secrets.`;
+          }
+        }
+        throw new Error(errorMsg);
       }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(lang === 'ua'
+          ? 'Отримано некоректну відповідь (не JSON) від сервера.'
+          : 'Invalid non-JSON response from the server.');
+      }
+
+      const data = await response.json();
 
       setName(data.name || '');
       const parsedWeight = Number(data.weightGrams) || 0;
