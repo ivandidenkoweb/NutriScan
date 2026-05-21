@@ -724,7 +724,7 @@ export default function App() {
                   : 'border-[#E2E8E4] text-[#2D5A27] hover:border-gray-300 bg-[#F3F7F4]'
               }`}
             >
-              {lang === 'ua' ? '🇬🇧 English' : '🇺🇦 Українська'}
+              {lang === 'ua' ? 'ENG' : 'УКР'}
             </button>
             <button
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
