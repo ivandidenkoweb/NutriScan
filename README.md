@@ -2,9 +2,9 @@
 
 > An AI-powered photo nutrition tracker and biometric calorie calculator that helps you stay healthy and log meals instantly.
 
-[![Demo](https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=1000)](https://ivandidenko-nutri-scan.netlify.app/)
+[![NutriScan App Showcase](./src/assets/img/demo-nutri-scan.png)](https://ivandidenko-nutri-scan.netlify.app/)
 
-> Click the image to view the demo. The link will open in the current tab (press `Ctrl + Click` or `Cmd + Click` to open in a new tab).
+> Click the image to view the demo. The link will open in the current tab (press Ctrl + Click or Cmd + Click to open in a new tab).
 
 ## Description
 
