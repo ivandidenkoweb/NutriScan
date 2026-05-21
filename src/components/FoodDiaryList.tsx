@@ -38,6 +38,53 @@ export default function FoodDiaryList({
   const [editKcal, setEditKcal] = useState(0);
   const [editExplanation, setEditExplanation] = useState('');
 
+  // Baseline item snapshot for scaling recalculations
+  const [baseItem, setBaseItem] = useState<{
+    weightGrams: number;
+    volumeMl: number;
+    proteins: number;
+    fats: number;
+    carbohydrates: number;
+    kcal: number;
+  } | null>(null);
+
+  const handleEditWeightChange = (newWeight: number) => {
+    setEditWeight(newWeight);
+    if (baseItem && baseItem.weightGrams > 0) {
+      const ratio = newWeight / baseItem.weightGrams;
+      setEditProteins(parseFloat((baseItem.proteins * ratio).toFixed(1)));
+      setEditFats(parseFloat((baseItem.fats * ratio).toFixed(1)));
+      setEditCarbohydrates(parseFloat((baseItem.carbohydrates * ratio).toFixed(1)));
+      setEditKcal(Math.round(baseItem.kcal * ratio));
+    }
+  };
+
+  const handleEditVolumeChange = (newVolume: number) => {
+    setEditVolume(newVolume);
+    if (baseItem && baseItem.volumeMl > 0) {
+      const ratio = newVolume / baseItem.volumeMl;
+      setEditProteins(parseFloat((baseItem.proteins * ratio).toFixed(1)));
+      setEditFats(parseFloat((baseItem.fats * ratio).toFixed(1)));
+      setEditCarbohydrates(parseFloat((baseItem.carbohydrates * ratio).toFixed(1)));
+      setEditKcal(Math.round(baseItem.kcal * ratio));
+    }
+  };
+
+  const handleEditProteinChange = (newProteins: number) => {
+    setEditProteins(newProteins);
+    setEditKcal(Math.round(newProteins * 4 + editFats * 9 + editCarbohydrates * 4));
+  };
+
+  const handleEditFatChange = (newFats: number) => {
+    setEditFats(newFats);
+    setEditKcal(Math.round(editProteins * 4 + newFats * 9 + editCarbohydrates * 4));
+  };
+
+  const handleEditCarbChange = (newCarbs: number) => {
+    setEditCarbohydrates(newCarbs);
+    setEditKcal(Math.round(editProteins * 4 + editFats * 9 + newCarbs * 4));
+  };
+
   const isDark = theme === 'dark';
   const t = translations[lang];
 
@@ -63,6 +110,14 @@ export default function FoodDiaryList({
     setEditCarbohydrates(item.carbohydrates);
     setEditKcal(item.kcal);
     setEditExplanation(item.explanation || '');
+    setBaseItem({
+      weightGrams: item.weightGrams,
+      volumeMl: item.volumeMl,
+      proteins: item.proteins,
+      fats: item.fats,
+      carbohydrates: item.carbohydrates,
+      kcal: item.kcal,
+    });
     if (openAccordion !== item.id) {
       setOpenAccordion(item.id);
     }
@@ -258,7 +313,7 @@ export default function FoodDiaryList({
                             <input
                               type="number"
                               value={editWeight || ''}
-                              onChange={(e) => setEditWeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                              onChange={(e) => handleEditWeightChange(Math.max(0, parseFloat(e.target.value) || 0))}
                               className={`w-full p-2 text-xs font-mono rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-white' 
@@ -275,7 +330,7 @@ export default function FoodDiaryList({
                             <input
                               type="number"
                               value={editVolume || ''}
-                              onChange={(e) => setEditVolume(Math.max(0, parseFloat(e.target.value) || 0))}
+                              onChange={(e) => handleEditVolumeChange(Math.max(0, parseFloat(e.target.value) || 0))}
                               className={`w-full p-2 text-xs font-mono rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-white' 
@@ -297,7 +352,7 @@ export default function FoodDiaryList({
                               type="number"
                               step="0.1"
                               value={editProteins || ''}
-                              onChange={(e) => setEditProteins(Math.max(0, parseFloat(e.target.value) || 0))}
+                              onChange={(e) => handleEditProteinChange(Math.max(0, parseFloat(e.target.value) || 0))}
                               className={`w-full p-2 text-xs font-mono text-center rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-[#89FFA0]' 
@@ -315,11 +370,11 @@ export default function FoodDiaryList({
                               type="number"
                               step="0.1"
                               value={editFats || ''}
-                              onChange={(e) => setEditFats(Math.max(0, parseFloat(e.target.value) || 0))}
+                              onChange={(e) => handleEditFatChange(Math.max(0, parseFloat(e.target.value) || 0))}
                               className={`w-full p-2 text-xs font-mono text-center rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
-                                  ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-amber-400' 
-                                  : 'bg-white border-[#E2E8E4] focus:ring-[#2D5A27] text-amber-600'
+                                  ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-[#34D399]' 
+                                  : 'bg-white border-[#E2E8E4] focus:ring-[#2D5A27] text-[#059669]'
                               }`}
                             />
                           </div>
@@ -333,11 +388,11 @@ export default function FoodDiaryList({
                               type="number"
                               step="0.1"
                               value={editCarbohydrates || ''}
-                              onChange={(e) => setEditCarbohydrates(Math.max(0, parseFloat(e.target.value) || 0))}
+                              onChange={(e) => handleEditCarbChange(Math.max(0, parseFloat(e.target.value) || 0))}
                               className={`w-full p-2 text-xs font-mono text-center rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
-                                  ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-sky-400' 
-                                  : 'bg-white border-[#E2E8E4] focus:ring-[#2D5A27] text-sky-600'
+                                  ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-[#A2C3A8]' 
+                                  : 'bg-white border-[#E2E8E4] focus:ring-[#2D5A27] text-[#527857]'
                               }`}
                             />
                           </div>
@@ -436,13 +491,13 @@ export default function FoodDiaryList({
                             isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-[#F3F7F4] border-[#E2E8E4]/60'
                           }`}>
                             <span className={`block text-[8px] uppercase font-bold text-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>{t.fats}</span>
-                            <span className={`font-semibold font-mono ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{item.fats.toFixed(1)} г</span>
+                            <span className={`font-semibold font-mono ${isDark ? 'text-[#34D399]' : 'text-[#059669]'}`}>{item.fats.toFixed(1)} г</span>
                           </div>
                           <div className={`rounded-xl p-2 border text-center ${
                             isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-[#F3F7F4] border-[#E2E8E4]/60'
                           }`}>
                             <span className={`block text-[8px] uppercase font-bold text-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>{t.carbs}</span>
-                            <span className={`font-semibold font-mono ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{item.carbohydrates.toFixed(1)} г</span>
+                            <span className={`font-semibold font-mono ${isDark ? 'text-[#A2C3A8]' : 'text-[#527857]'}`}>{item.carbohydrates.toFixed(1)} г</span>
                           </div>
                         </div>
 

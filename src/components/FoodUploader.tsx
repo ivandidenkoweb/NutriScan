@@ -54,6 +54,70 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
   const [kcal, setKcal] = useState(0);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [explanation, setExplanation] = useState('');
+
+  // Baseline values from AI analysis for dynamic scaling recalculation
+  const [baseValues, setBaseValues] = useState<{
+    weightGrams: number;
+    volumeMl: number;
+    proteins: number;
+    fats: number;
+    carbs: number;
+    kcal: number;
+    ingredients: Ingredient[];
+  } | null>(null);
+
+  const handleWeightChange = (newWeight: number) => {
+    setWeightGrams(newWeight);
+    if (baseValues && baseValues.weightGrams > 0) {
+      const ratio = newWeight / baseValues.weightGrams;
+      setProteins(parseFloat((baseValues.proteins * ratio).toFixed(1)));
+      setFats(parseFloat((baseValues.fats * ratio).toFixed(1)));
+      setCarbs(parseFloat((baseValues.carbs * ratio).toFixed(1)));
+      setKcal(Math.round(baseValues.kcal * ratio));
+      if (baseValues.ingredients && baseValues.ingredients.length > 0) {
+        setIngredients(
+          baseValues.ingredients.map(ing => ({
+            ...ing,
+            weight: parseFloat((ing.weight * ratio).toFixed(1))
+          }))
+        );
+      }
+    }
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolumeMl(newVolume);
+    if (baseValues && baseValues.volumeMl > 0) {
+      const ratio = newVolume / baseValues.volumeMl;
+      setProteins(parseFloat((baseValues.proteins * ratio).toFixed(1)));
+      setFats(parseFloat((baseValues.fats * ratio).toFixed(1)));
+      setCarbs(parseFloat((baseValues.carbs * ratio).toFixed(1)));
+      setKcal(Math.round(baseValues.kcal * ratio));
+      if (baseValues.ingredients && baseValues.ingredients.length > 0) {
+        setIngredients(
+          baseValues.ingredients.map(ing => ({
+            ...ing,
+            weight: parseFloat((ing.weight * ratio).toFixed(1))
+          }))
+        );
+      }
+    }
+  };
+
+  const handleProteinChange = (newProteins: number) => {
+    setProteins(newProteins);
+    setKcal(Math.round(newProteins * 4 + fats * 9 + carbs * 4));
+  };
+
+  const handleFatChange = (newFats: number) => {
+    setFats(newFats);
+    setKcal(Math.round(proteins * 4 + newFats * 9 + carbs * 4));
+  };
+
+  const handleCarbChange = (newCarbs: number) => {
+    setCarbs(newCarbs);
+    setKcal(Math.round(proteins * 4 + fats * 9 + newCarbs * 4));
+  };
   
   // Custom meal date state - can be overridden during food save
   const [mealDate, setMealDate] = useState(activeDate);
@@ -207,14 +271,31 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       }
 
       setName(data.name || '');
-      setWeightGrams(Number(data.weightGrams) || 0);
-      setVolumeMl(Number(data.volumeMl) || 0);
-      setProteins(Number(data.proteins) || 0);
-      setFats(Number(data.fats) || 0);
-      setCarbs(Number(data.carbohydrates) || 0);
-      setKcal(Number(data.kcal) || 0);
-      setIngredients(Array.isArray(data.ingredients) ? data.ingredients : []);
+      const parsedWeight = Number(data.weightGrams) || 0;
+      const parsedVolume = Number(data.volumeMl) || 0;
+      const parsedProteins = Number(data.proteins) || 0;
+      const parsedFats = Number(data.fats) || 0;
+      const parsedCarbs = Number(data.carbohydrates) || 0;
+      const parsedKcal = Number(data.kcal) || 0;
+      const parsedIngredients = Array.isArray(data.ingredients) ? data.ingredients : [];
+
+      setWeightGrams(parsedWeight);
+      setVolumeMl(parsedVolume);
+      setProteins(parsedProteins);
+      setFats(parsedFats);
+      setCarbs(parsedCarbs);
+      setKcal(parsedKcal);
+      setIngredients(parsedIngredients);
       setExplanation(data.explanation || '');
+      setBaseValues({
+        weightGrams: parsedWeight,
+        volumeMl: parsedVolume,
+        proteins: parsedProteins,
+        fats: parsedFats,
+        carbs: parsedCarbs,
+        kcal: parsedKcal,
+        ingredients: parsedIngredients
+      });
       setEditMode(true);
     } catch (err: any) {
       console.error(err);
@@ -250,14 +331,31 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       }
 
       setName(data.name || '');
-      setWeightGrams(Number(data.weightGrams) || 0);
-      setVolumeMl(Number(data.volumeMl) || 0);
-      setProteins(Number(data.proteins) || 0);
-      setFats(Number(data.fats) || 0);
-      setCarbs(Number(data.carbohydrates) || 0);
-      setKcal(Number(data.kcal) || 0);
-      setIngredients(Array.isArray(data.ingredients) ? data.ingredients : []);
+      const parsedWeight = Number(data.weightGrams) || 0;
+      const parsedVolume = Number(data.volumeMl) || 0;
+      const parsedProteins = Number(data.proteins) || 0;
+      const parsedFats = Number(data.fats) || 0;
+      const parsedCarbs = Number(data.carbohydrates) || 0;
+      const parsedKcal = Number(data.kcal) || 0;
+      const parsedIngredients = Array.isArray(data.ingredients) ? data.ingredients : [];
+
+      setWeightGrams(parsedWeight);
+      setVolumeMl(parsedVolume);
+      setProteins(parsedProteins);
+      setFats(parsedFats);
+      setCarbs(parsedCarbs);
+      setKcal(parsedKcal);
+      setIngredients(parsedIngredients);
       setExplanation(data.explanation || '');
+      setBaseValues({
+        weightGrams: parsedWeight,
+        volumeMl: parsedVolume,
+        proteins: parsedProteins,
+        fats: parsedFats,
+        carbs: parsedCarbs,
+        kcal: parsedKcal,
+        ingredients: parsedIngredients
+      });
       setEditMode(true);
     } catch (err: any) {
       console.error(err);
@@ -275,6 +373,16 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     const next = [...ingredients];
     next.splice(index, 1);
     setIngredients(next);
+
+    if (baseValues && baseValues.weightGrams > 0) {
+      const newTotalWeight = next.reduce((acc, ing) => acc + (ing.weight || 0), 0);
+      setWeightGrams(newTotalWeight);
+      const ratio = newTotalWeight / baseValues.weightGrams;
+      setProteins(parseFloat((baseValues.proteins * ratio).toFixed(1)));
+      setFats(parseFloat((baseValues.fats * ratio).toFixed(1)));
+      setCarbs(parseFloat((baseValues.carbs * ratio).toFixed(1)));
+      setKcal(Math.round(baseValues.kcal * ratio));
+    }
   };
 
   const handleUpdateIngredient = (index: number, key: keyof Ingredient, val: any) => {
@@ -284,6 +392,18 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       [key]: key === 'weight' ? (parseFloat(val) || 0) : val
     };
     setIngredients(next);
+
+    if (key === 'weight' && baseValues && baseValues.weightGrams > 0) {
+      const newTotalWeight = next.reduce((acc, ing) => acc + (ing.weight || 0), 0);
+      if (newTotalWeight > 0) {
+        setWeightGrams(newTotalWeight);
+        const ratio = newTotalWeight / baseValues.weightGrams;
+        setProteins(parseFloat((baseValues.proteins * ratio).toFixed(1)));
+        setFats(parseFloat((baseValues.fats * ratio).toFixed(1)));
+        setCarbs(parseFloat((baseValues.carbs * ratio).toFixed(1)));
+        setKcal(Math.round(baseValues.kcal * ratio));
+      }
+    }
   };
 
   const handleSave = () => {
@@ -317,6 +437,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     setErrorMsg(null);
     setTextQuery('');
     setMealDate(activeDate);
+    setBaseValues(null);
   };
 
   const textProgressStages = lang === 'ua' 
@@ -339,7 +460,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     <div 
       id="food-uploader-container" 
       className={`rounded-[32px] border p-6 transition-all duration-300 ${
-        isDark ? 'bg-zinc-900/90 border-zinc-800 text-zinc-100' : 'bg-white border-[#E2E8E4] text-[#1A1C1B]'
+        isDark ? 'bg-[#121B13]/95 border-[#223F24] text-zinc-100' : 'bg-white border-[#BDD6C2] text-[#1A1C1B]'
       }`}
     >
       <div className="flex items-center justify-between mb-4">
@@ -374,16 +495,18 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
 
       {/* Mode switcher tabs (only when not loading or editing) */}
       {!editMode && !isLoading && (
-        <div className={`flex p-1 mb-5 rounded-2xl ${isDark ? 'bg-zinc-950' : 'bg-gray-100'}`}>
+        <div className={`flex p-1 mb-5 rounded-2xl ${isDark ? 'bg-[#0A110B]' : 'bg-[#EDF3EE]'}`}>
           <button
             type="button"
             onClick={() => setEntryMode('photo')}
             className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               entryMode === 'photo'
                 ? isDark
-                  ? 'bg-zinc-800 text-[#89FFA0] shadow-sm'
+                  ? 'bg-[#1D3A20] text-[#89FFA0] shadow-sm'
                   : 'bg-white text-[#2D5A27] shadow-xs'
-                : 'text-zinc-500 hover:text-zinc-400'
+                : isDark
+                  ? 'text-[#527956] hover:text-[#89FFA0]'
+                  : 'text-[#4D6C52] hover:text-[#2D5A27]'
             }`}
           >
             <Camera className="w-3.5 h-3.5" />
@@ -395,9 +518,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
             className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               entryMode === 'text'
                 ? isDark
-                  ? 'bg-zinc-800 text-[#89FFA0] shadow-sm'
+                  ? 'bg-[#1D3A20] text-[#89FFA0] shadow-sm'
                   : 'bg-white text-[#2D5A27] shadow-xs'
-                : 'text-zinc-500 hover:text-zinc-400'
+                : isDark
+                  ? 'text-[#527956] hover:text-[#89FFA0]'
+                  : 'text-[#4D6C52] hover:text-[#2D5A27]'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -416,10 +541,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
           onClick={triggerFileSelect}
           className={`border-2 border-dashed rounded-[32px] p-8 text-center flex flex-col items-center justify-center cursor-pointer min-h-[200px] transition-all duration-200 ${
             dragActive
-              ? isDark ? 'border-[#89FFA0] bg-zinc-950' : 'border-[#2D5A27] bg-[#F3F7F4]'
+              ? isDark ? 'border-[#89FFA0] bg-[#0A110B]' : 'border-[#2D5A27] bg-[#F1F8F4]'
               : isDark
-                ? 'border-zinc-800 hover:border-[#89FFA0] hover:bg-zinc-950/40'
-                : 'border-[#C7D1C9] hover:border-[#2D5A27] hover:bg-[#F3F7F4]/50'
+                ? 'border-[#223F24] hover:border-[#89FFA0] hover:bg-[#0A110B]/40'
+                : 'border-[#C1DEC7] hover:border-[#2D5A27] hover:bg-[#F1F8F4]'
           }`}
         >
           <input
@@ -430,7 +555,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
             className="hidden"
           />
           <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${
-            isDark ? 'bg-zinc-950 text-[#89FFA0]' : 'bg-[#F3F7F4] text-[#2D5A27]'
+            isDark ? 'bg-[#0A110B] text-[#89FFA0]' : 'bg-[#F1F8F4] text-[#2D5A27]'
           }`}>
             <Camera className="w-7 h-7" />
           </div>
@@ -443,7 +568,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
           <button
             type="button"
             className={`mt-4 py-2 px-3.5 rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
-              isDark ? 'bg-zinc-800 hover:bg-zinc-750 text-white border border-zinc-700' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
+              isDark ? 'bg-[#1D3A20] hover:bg-[#234427] text-white border border-[#2B542E]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
             }`}
           >
             <Upload className="w-3.5 h-3.5" />
@@ -466,8 +591,8 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
               rows={4}
               className={`w-full p-4 text-xs rounded-[20px] border focus:ring-1 focus:outline-none transition-all leading-relaxed ${
                 isDark 
-                  ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-white placeholder-zinc-500' 
-                  : 'bg-white border-[#E2E8E4] focus:ring-[#2D5A27] text-[#1A1C1B] placeholder-gray-400'
+                  ? 'bg-[#0B120C] border-[#223F24] focus:ring-[#89FFA0] text-white placeholder-zinc-500' 
+                  : 'bg-white border-[#BDD6C2] focus:ring-[#2D5A27] text-[#1A1C1B] placeholder-gray-400'
               }`}
             />
           </div>
@@ -475,7 +600,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
             onClick={handleAnalyzeText}
             disabled={!textQuery.trim()}
             className={`w-full py-2.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-sm shadow-sm disabled:opacity-45 disabled:cursor-not-allowed ${
-              isDark ? 'bg-[#89FFA0] text-zinc-950 hover:bg-[#6be483]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
+              isDark ? 'bg-[#89FFA0] text-[#0A110B] hover:bg-[#6be483]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -487,11 +612,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       {/* Analyzing simulation spinner */}
       {isLoading && (
         <div className={`flex flex-col items-center justify-center py-10 px-4 border rounded-2xl ${
-          isDark ? 'border-zinc-800 bg-zinc-950/30' : 'border-[#E2E8E4] bg-[#F3F7F4]/40'
+          isDark ? 'border-[#223F24] bg-[#0A130B]/30' : 'border-[#BDD6C2] bg-[#F1F8F4]/40'
         }`}>
           <div className="relative flex items-center justify-center mb-5">
             <div className={`w-14 h-14 border-4 rounded-full animate-spin ${
-              isDark ? 'border-zinc-850 border-t-[#89FFA0]' : 'border-[#DCEEE0] border-t-[#2D5A27]'
+              isDark ? 'border-[#1E3E21] border-t-[#89FFA0]' : 'border-[#DCEEE0] border-t-[#2D5A27]'
             }`}></div>
             <Sparkles className={`w-5 h-5 absolute animate-pulse ${isDark ? 'text-[#89FFA0]' : 'text-[#2D5A27]'}`} />
           </div>
@@ -508,7 +633,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       {entryMode === 'photo' && imagePreview && !isLoading && !editMode && (
         <div className="space-y-4 animate-fadeIn">
           <div className={`relative rounded-2xl overflow-hidden aspect-video flex items-center justify-center max-h-[250px] border ${
-            isDark ? 'bg-zinc-950 border-zinc-850' : 'bg-[#F3F7F4] border-[#E2E8E4]'
+            isDark ? 'bg-[#0A130B] border-[#1E3A20]' : 'bg-[#F1F8F4] border-[#BDD6C2]'
           }`}>
             <img
               src={imagePreview}
@@ -520,7 +645,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
           <button
             onClick={handleAnalyze}
             className={`w-full py-2.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer text-sm ${
-              isDark ? 'bg-[#89FFA0] text-zinc-950 hover:bg-[#6be483]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
+              isDark ? 'bg-[#89FFA0] text-[#0A110B] hover:bg-[#6be483]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -535,7 +660,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {imagePreview ? (
               <div className={`relative rounded-xl overflow-hidden aspect-video sm:aspect-auto sm:h-full flex items-center justify-center max-h-[180px] border ${
-                isDark ? 'bg-zinc-950 border-zinc-850' : 'bg-[#F3F7F4] border-[#E2E8E4]'
+                isDark ? 'bg-[#0A130B] border-[#1E3A20]' : 'bg-[#F1F8F4] border-[#BDD6C2]'
               }`}>
                 <img
                   src={imagePreview}
@@ -555,8 +680,8 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                   onChange={(e) => setName(e.target.value)}
                   className={`w-full px-2.5 py-1.5 text-sm border focus:ring-1 rounded-lg outline-none font-medium ${
                     isDark 
-                      ? 'bg-zinc-950 border-zinc-800 focus:border-[#89FFA0] focus:ring-[#89FFA0]/20 text-white' 
-                      : 'bg-[#F8FAF9] border-[#E2E8E4] focus:border-[#2D5A27] focus:ring-[#DCEEE0] text-[#1A1C1B]'
+                      ? 'bg-[#0B120C] border-[#223F24] focus:border-[#89FFA0] focus:ring-[#89FFA0]/20 text-white' 
+                      : 'bg-[#F1F8F4] border-[#BDD6C2] focus:border-[#2D5A27] focus:ring-[#DCEEE0] text-[#1D3220]'
                   }`}
                 />
               </div>
@@ -566,8 +691,8 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 <label className={`text-[10px] uppercase font-bold block mb-0.5 ${isDark ? 'text-zinc-400' : 'text-[#4A5D4E]'}`}>{t.mealDate}</label>
                 <div className={`relative w-full px-2.5 py-1.5 text-sm border focus-within:ring-1 rounded-lg outline-none font-medium flex items-center justify-between ${
                   isDark 
-                    ? 'bg-zinc-950 border-zinc-800 focus-within:border-[#89FFA0] focus-within:ring-[#89FFA0]/20 text-white' 
-                    : 'bg-[#F8FAF9] border-[#E2E8E4] focus-within:border-[#2D5A27] focus-within:ring-[#DCEEE0] text-[#1A1C1B]'
+                    ? 'bg-[#0B120C] border-[#223F24] focus-within:border-[#89FFA0] focus-within:ring-[#89FFA0]/20 text-white' 
+                    : 'bg-[#F1F8F4] border-[#BDD6C2] focus-within:border-[#2D5A27] focus-within:ring-[#DCEEE0] text-[#1D3220]'
                 }`}>
                   <span className="select-none font-medium">
                     {(() => {
@@ -595,11 +720,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                   <input
                     type="number"
                     value={weightGrams}
-                    onChange={(e) => setWeightGrams(Math.max(0, parseInt(e.target.value) || 0))}
+                    onChange={(e) => handleWeightChange(Math.max(0, parseFloat(e.target.value) || 0))}
                     className={`w-full px-2.5 py-1.5 text-sm border focus:ring-1 rounded-lg outline-none ${
                       isDark 
-                        ? 'bg-zinc-950 border-zinc-850 text-white focus:border-[#89FFA0]' 
-                        : 'bg-[#F8FAF9] border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                        ? 'bg-[#0B120C] border-[#1E3A20] text-white focus:border-[#89FFA0]' 
+                        : 'bg-[#F1F8F4] border-[#BDD6C2] text-[#1D3220] focus:border-[#2D5A27]'
                     }`}
                   />
                 </div>
@@ -608,11 +733,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                   <input
                     type="number"
                     value={volumeMl}
-                    onChange={(e) => setVolumeMl(Math.max(0, parseInt(e.target.value) || 0))}
+                    onChange={(e) => handleVolumeChange(Math.max(0, parseFloat(e.target.value) || 0))}
                     className={`w-full px-2.5 py-1.5 text-sm border focus:ring-1 rounded-lg outline-none ${
                       isDark 
-                        ? 'bg-zinc-950 border-zinc-850 text-white focus:border-[#89FFA0]' 
-                        : 'bg-[#F8FAF9] border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                        ? 'bg-[#0B120C] border-[#1E3A20] text-white focus:border-[#89FFA0]' 
+                        : 'bg-[#F1F8F4] border-[#BDD6C2] text-[#1D3220] focus:border-[#2D5A27]'
                     }`}
                   />
                 </div>
@@ -627,8 +752,8 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                   onChange={(e) => setKcal(Math.max(0, parseInt(e.target.value) || 0))}
                   className={`w-full px-2.5 py-1.5 text-sm font-bold border focus:ring-1 rounded-lg outline-none ${
                     isDark
-                      ? 'bg-[#89FFA0]/15 border-zinc-800 text-[#89FFA0] focus:border-[#89FFA0]'
-                      : 'bg-[#F3F7F4] border-[#E2E8E4] text-[#2D5A27] focus:border-[#2D5A27]'
+                      ? 'bg-[#89FFA0]/15 border-[#1E3A20] text-[#89FFA0] focus:border-[#89FFA0]'
+                      : 'bg-[#F1F8F4] border-[#BDD6C2] text-[#2D5A27] focus:border-[#2D5A27]'
                   }`}
                 />
               </div>
@@ -637,7 +762,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
 
           {/* Macros input row */}
           <div className={`grid grid-cols-3 gap-2 p-2.5 rounded-xl border ${
-            isDark ? 'bg-zinc-950 border-zinc-850' : 'bg-[#F3F7F4] border-[#E2E8E4]'
+            isDark ? 'bg-[#070F08] border-[#1D381F]' : 'bg-[#EDF5EF] border-[#BDD6C2]'
           }`}>
             <div>
               <label className={`text-[9px] font-bold uppercase block mb-0.5 text-center ${isDark ? 'text-zinc-400' : 'text-[#4A5D4E]'}`}>{t.proteins} ({lang === 'ua' ? 'г' : 'g'})</label>
@@ -645,11 +770,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 type="number"
                 step="0.1"
                 value={proteins}
-                onChange={(e) => setProteins(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => handleProteinChange(Math.max(0, parseFloat(e.target.value) || 0))}
                 className={`w-full py-1 text-center text-xs border rounded-md outline-none font-mono ${
                   isDark 
-                    ? 'bg-zinc-900 border-zinc-805 text-[#89FFA0] focus:border-[#89FFA0]' 
-                    : 'bg-white border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                    ? 'bg-[#132515] border-[#1E3E21] text-[#89FFA0] focus:border-[#89FFA0]' 
+                    : 'bg-white border-[#BDD6C2] text-[#2D5A27] focus:border-[#2D5A27]'
                 }`}
               />
             </div>
@@ -659,11 +784,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 type="number"
                 step="0.1"
                 value={fats}
-                onChange={(e) => setFats(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => handleFatChange(Math.max(0, parseFloat(e.target.value) || 0))}
                 className={`w-full py-1 text-center text-xs border rounded-md outline-none font-mono ${
                   isDark 
-                    ? 'bg-zinc-900 border-zinc-800 text-amber-400 focus:border-[#89FFA0]' 
-                    : 'bg-white border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                    ? 'bg-[#132515] border-[#1E3E21] text-[#34D399] focus:border-[#89FFA0]' 
+                    : 'bg-white border-[#BDD6C2] text-[#059669] focus:border-[#2D5A27]'
                 }`}
               />
             </div>
@@ -673,11 +798,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 type="number"
                 step="0.1"
                 value={carbs}
-                onChange={(e) => setCarbs(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => handleCarbChange(Math.max(0, parseFloat(e.target.value) || 0))}
                 className={`w-full py-1 text-center text-xs border rounded-md outline-none font-mono ${
                   isDark 
-                    ? 'bg-zinc-900 border-zinc-800 text-sky-400 focus:border-[#89FFA0]' 
-                    : 'bg-white border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                    ? 'bg-[#132515] border-[#1E3E21] text-[#A2C3A8] focus:border-[#89FFA0]' 
+                    : 'bg-white border-[#BDD6C2] text-[#527857] focus:border-[#2D5A27]'
                 }`}
               />
             </div>
@@ -709,8 +834,8 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                     onChange={(e) => handleUpdateIngredient(idx, 'name', e.target.value)}
                     className={`flex-1 px-2.5 py-1 text-xs border rounded-lg outline-none font-medium ${
                       isDark 
-                        ? 'bg-zinc-950 border-zinc-800 text-white focus:border-[#89FFA0]' 
-                        : 'bg-[#F8FAF9] border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                        ? 'bg-[#0B120C] border-[#1E3A20] text-white focus:border-[#89FFA0]' 
+                        : 'bg-[#F1F8F4] border-[#BDD6C2] text-[#1D3220] focus:border-[#2D5A27]'
                     }`}
                   />
                   <input
@@ -720,8 +845,8 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                     onChange={(e) => handleUpdateIngredient(idx, 'weight', e.target.value)}
                     className={`w-18 px-2 py-1 text-xs border rounded-lg outline-none text-right font-mono ${
                       isDark 
-                        ? 'bg-zinc-950 border-zinc-800 text-white focus:border-[#89FFA0]' 
-                        : 'bg-[#F8FAF9] border-[#E2E8E4] text-[#1A1C1B] focus:border-[#2D5A27]'
+                        ? 'bg-[#0B120C] border-[#1E3A20] text-white focus:border-[#89FFA0]' 
+                        : 'bg-[#F1F8F4] border-[#BDD6C2] text-[#1D3220] focus:border-[#2D5A27]'
                     }`}
                   />
                   <button
@@ -735,7 +860,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
               ))}
               {ingredients.length === 0 && (
                 <p className={`text-xs text-center py-2 rounded-lg border border-dashed font-medium ${
-                  isDark ? 'border-zinc-800 text-zinc-500 bg-zinc-950/20' : 'border-[#E2E8E4] text-slate-400 bg-[#F8FAF9]'
+                  isDark ? 'border-[#1E3A20] text-[#55805B] bg-[#0A130B]/20' : 'border-[#BDD6C2] text-slate-500 bg-[#F1F8F4]'
                 }`}>
                   {t.noIngredients}
                 </p>
@@ -746,7 +871,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
           {/* Explanation block */}
           {explanation && (
             <div className={`p-3 rounded-2xl border ${
-              isDark ? 'bg-zinc-950 border-zinc-850 text-zinc-300' : 'bg-[#F3F7F4] border-[#E2E8E4] text-[#4A5D4E]'
+              isDark ? 'bg-[#0C160D] border-[#1E3A20] text-zinc-200' : 'bg-[#F1F8F4] border-[#BDD6C2] text-[#1D3220]'
             }`}>
               <span className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${
                 isDark ? 'text-[#89FFA0]' : 'text-[#2D5A27]'
@@ -759,7 +884,7 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
           <button
             onClick={handleSave}
             className={`w-full py-2.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-sm shadow-xs ${
-              isDark ? 'bg-[#89FFA0] text-zinc-950 hover:bg-[#6be483]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
+              isDark ? 'bg-[#89FFA0] text-[#0A110B] hover:bg-[#6be483]' : 'bg-[#2D5A27] text-white hover:bg-[#23471F]'
             }`}
           >
             <Check className="w-4 h-4" />
