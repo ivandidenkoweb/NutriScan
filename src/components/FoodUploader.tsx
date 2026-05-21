@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Camera, Upload, AlertCircle, Check, Undo, Plus, Trash2, FileText } from 'lucide-react';
 import { FoodItem, Ingredient } from '../types';
 import { translations } from '../locales';
+import { GoogleGenAI, Type } from '@google/genai';
 
 interface FoodUploaderProps {
   activeDate: string; // YYYY-MM-DD
@@ -244,6 +245,213 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     fileInputRef.current?.click();
   };
 
+  const executeClientSideAnalyze = async (imageBase64: string, mimeType: string, lang: 'ua' | 'en') => {
+    const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        lang === 'ua'
+          ? 'Помилка розгортання: Ендпоінт /api/analyze-food повернув 404 (ви знаходитесь на статичному хостингу Netlify). Щоб ШІ працював на Netlify, додайте змінну середовища VITE_GEMINI_API_KEY у налаштуваннях вашого проекту Netlify (Site configuration > Environment variables).'
+          : 'Deployment error: Endpoint /api/analyze-food returned 404 (you are on a static host like Netlify). To enable AI analysis on Netlify, add the VITE_GEMINI_API_KEY environment variable in your Netlify Project Settings.'
+      );
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const imagePart = {
+      inlineData: {
+        mimeType,
+        data: imageBase64,
+      },
+    };
+
+    const isEnglish = lang === 'en';
+    const systemInstruction = isEnglish
+      ? "You are an experienced, certified nutritionist and food analysis expert. Your task is to analyze the food image and provide the most realistic estimation of its portion weight (in grams), volume (in milliliters for liquids or soups, otherwise 0), proteins, fats, carbohydrates, total calories, and ingredients. Take into account visual cues: plate size, utensils, shadows, and food texture to estimate portion size as accurately as possible. The response, descriptions, and all text MUST be provided EXCLUSIVELY in English."
+      : "Ти є досвідченим сертифікованим нутриціологом та експертом з аналізу їжі. Твоє завдання — проаналізувати зображення їжі й дати максимально реалістичну очікувану оцінку її ваги порції (в грамах), об'єму (в мілілітрах, якщо це рідина або суп, інакше 0), білків, жирів, вуглеводів, загальної калорійності та інгредієнтів. Візьми до уваги візуальні орієнтири: розмір тарілки, приборів, тіні та текстуру їжі, щоб оцінити розмір порції максимально точно. Відповідь та опис надавай ВИКЛЮЧНО українською мовою.";
+
+    const promptText = isEnglish
+      ? "Please analyze the meal in this photo in detail. Identify its name, estimate the total portion weight, volume (if liquid), calculate proteins, fats, carbohydrates in grams, and total kcal. Provide a complete list of ingredients with their weights and a detailed nutritional explanation of your assessment in English."
+      : "Будь ласка, детально проаналізуй страву на цьому фото. Визнач її назву, оціни загальну вагу порції, об'єм (якщо рідка), підрахуй білки, жири, вуглеводи у грамах та загальну ккал. Надай повний список інгредієнтів з їхньою вагою й детальне нутриціологічне пояснення оцінки українською мовою.";
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        name: {
+          type: Type.STRING,
+          description: isEnglish ? "Name of the dish or food item in English." : "Назва страви або продукту харчування українською мовою."
+        },
+        weightGrams: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Approximate portion weight in grams (positive float or integer)." : "Приблизна вага порції страви у грамах (ціле або дробове додатне число)."
+        },
+        volumeMl: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Approximate portion volume in milliliters (for soups, beverages, smoothies, etc.; return 0 if the dish is solid)." : "Приблизний об'єм порції у мілілітрах (для супів, напоїв, смузі тощо; якщо страва тверда, поверни 0)."
+        },
+        proteins: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Protein content in grams for the entire portion." : "Вміст білків у грамах на всю цю порцію."
+        },
+        fats: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Fat content in grams for the entire portion." : "Вміст жирів у грамах на всю цю порцію."
+        },
+        carbohydrates: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Carbohydrate content in grams for the entire portion." : "Вміст вуглеводів у грамах на всю цю порцію."
+        },
+        kcal: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Total kilocalories (kcal) for the entire portion." : "Загальна кількість кілокалорій (ккал) на всю цю порцію."
+        },
+        ingredients: {
+          type: Type.ARRAY,
+          description: isEnglish ? "List of identified ingredients of this portion with their approximate weight in grams." : "Список ідентифікованих інгредієнтів цієї порції страви з їхнім орієнтовним внеском у грамах.",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: {
+                type: Type.STRING,
+                description: isEnglish ? "Ingredient name in English (e.g., chicken fillet, tomato, olive oil)." : "Назва інгредієнта українською мовою (наприклад: куряче філе, помідор, оливкова олія)."
+              },
+              weight: {
+                type: Type.NUMBER,
+                description: isEnglish ? "Weight of this ingredient in grams inside the portion." : "Маса цього інгредієнта в грамах у складі страви."
+              }
+            },
+            required: ["name", "weight"]
+          }
+        },
+        explanation: {
+          type: Type.STRING,
+          description: isEnglish ? "Short professional justification of the assessment in English: why this portion size, weight, composition and which food details support it." : "Коротке та професійне обґрунтування оцінки українською мовою: чому саме такий об'єм/вага і склад, які характерні особливості страви видно."
+        }
+      },
+      required: ["name", "weightGrams", "volumeMl", "proteins", "fats", "carbohydrates", "kcal", "ingredients", "explanation"]
+    };
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [imagePart, { text: promptText }],
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema,
+        temperature: 0.2
+      }
+    });
+
+    const responseText = response.text;
+    if (!responseText) {
+      throw new Error(
+        lang === 'ua'
+          ? "Gemini API повернув порожню відповідь за прямого запиту."
+          : "Gemini API returned an empty response during direct request."
+      );
+    }
+
+    return JSON.parse(responseText.trim());
+  };
+
+  const executeClientSideTextAnalyze = async (query: string, lang: 'ua' | 'en') => {
+    const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        lang === 'ua'
+          ? 'Помилка розгортання: Ендпоінт /api/analyze-food-text повернув 404 (ви знаходитесь на статичному хостингу Netlify). Щоб ШІ працював на Netlify, додайте змінну середовища VITE_GEMINI_API_KEY у налаштуваннях вашого проекту Netlify (Site configuration > Environment variables).'
+          : 'Deployment error: Endpoint /api/analyze-food-text returned 404 (you are on a static host like Netlify). To enable AI analysis on Netlify, add the VITE_GEMINI_API_KEY environment variable in your Netlify Project Settings.'
+      );
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const isEnglish = lang === 'en';
+    const systemInstruction = isEnglish
+      ? "You are an experienced, certified nutritionist and food analysis expert. Your task is to analyze the text query describing a meal or food items and estimate its portion weight (in grams), volume (in milliliters for liquids/soups, otherwise 0), proteins, fats, carbohydrates, total calories, and ingredients. If weights or specific ingredient proportions are not mentioned, approximate them using realistic/typical standard portion shapes and sizes. The response, descriptions, and all text MUST be provided EXCLUSIVELY in English."
+      : "Ти є досвідченим сертифікованим нутриціологом та експертом з аналізу їжі. Твоє завдання — проаналізувати опис страви чи продуктів у тексті й дати максимально реалістичну оцінку її ваги порції (в грамах), об'єму (в мілілітрах для супів і напоїв, інакше 0), білків, жирів, вуглеводів, загальної калорійності та інгредієнтів. Якщо користувач не вказав точну вагу, припустити типові середні ваги для здорової порції. Відповідь та опис надавай ВИКЛЮЧНО українською мовою.";
+
+    const promptText = isEnglish
+      ? `Please retrieve nutrition values for: "${query}". Estimate its total weight, volume, macros (protein, fat, carbohydrates in grams) and kcal. Produce the ingredients and a professional feedback.`
+      : `Будь ласка, визнач нутрієнти для: "${query}". Оціни загальну вагу, об'єм, показники БЖВ, ккал, детальні інгредієнти та надай професійне пояснення.`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        name: {
+          type: Type.STRING,
+          description: isEnglish ? "Name of the dish or food item in English (e.g., Grilled Chicken with Rice)." : "Назва страви або продукту харчування українською мовою (наприклад: Курка гриль з рисом)."
+        },
+        weightGrams: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Approximate portion weight in grams." : "Приблизна вага порції страви у грамах."
+        },
+        volumeMl: {
+          type: Type.NUMBER,
+          description: isEnglish ? "Approximate portion volume in milliliters (for liquids, soups, beverages; else 0)." : "Приблизний об'єм порції у мілілітрах (для супів, напоїв, смузі тощо; якщо тверда страва, поверни 0)."
+        },
+        proteins: {
+          type: Type.NUMBER,
+          description: "Protein content in grams for the portion."
+        },
+        fats: {
+          type: Type.NUMBER,
+          description: "Fat content in grams for the portion."
+        },
+        carbohydrates: {
+          type: Type.NUMBER,
+          description: "Carbohydrate content in grams for the portion."
+        },
+        kcal: {
+          type: Type.NUMBER,
+          description: "Total kilocalories (kcal) for the entire portion."
+        },
+        ingredients: {
+          type: Type.ARRAY,
+          description: "List of identified ingredients with their weight in grams.",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: {
+                type: Type.STRING,
+                description: isEnglish ? "Ingredient name in English" : "Назва інгредієнта українською"
+              },
+              weight: {
+                type: Type.NUMBER,
+                description: "Weight of this ingredient in grams."
+              }
+            },
+            required: ["name", "weight"]
+          }
+        },
+        explanation: {
+          type: Type.STRING,
+          description: isEnglish ? "Short justification of nutrition value assessment in English." : "Коротке та професійне пояснення джерела калорій та користі страви українською мовою."
+        }
+      },
+      required: ["name", "weightGrams", "volumeMl", "proteins", "fats", "carbohydrates", "kcal", "ingredients", "explanation"]
+    };
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [{ text: promptText }],
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema,
+        temperature: 0.2
+      }
+    });
+
+    const responseText = response.text;
+    if (!responseText) {
+      throw new Error(
+        lang === 'ua'
+          ? "Gemini API повернув порожню відповідь за прямого запиту."
+          : "Gemini API returned an empty response during direct request."
+      );
+    }
+
+    return JSON.parse(responseText.trim());
+  };
+
   const handleAnalyze = async () => {
     if (!imageBase64 || !mimeType) return;
 
@@ -252,48 +460,64 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     setEditMode(false);
 
     try {
-      const response = await fetch('/api/analyze-food', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64,
-          mimeType,
-          lang, // pass the language preference to Gemini nutritionist
-        }),
-      });
+      let data: any = null;
+      let is404Error = false;
 
-      if (!response.ok) {
-        let errorMsg = lang === 'ua' ? 'Помилка сервера.' : 'Server error occurred.';
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const errData = await response.json();
-          errorMsg = errData.error || errorMsg;
-        } else {
-          const respText = await response.text();
-          console.error('Non-JSON error response:', respText);
-          if (response.status === 404) {
-            errorMsg = lang === 'ua' 
-              ? 'Ендпоінт /api/analyze-food не знайдено (код 404). Можливо, сервер перезапускається або не підтримує цей запит.' 
-              : 'Endpoint /api/analyze-food not found (404). Node server is reloading or misconfigured.';
+      try {
+        const response = await fetch('/api/analyze-food', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageBase64,
+            mimeType,
+            lang, // pass the language preference to Gemini nutritionist
+          }),
+        });
+
+        if (response.status === 404) {
+          is404Error = true;
+        } else if (!response.ok) {
+          let errorMsg = lang === 'ua' ? 'Помилка сервера.' : 'Server error occurred.';
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errData = await response.json();
+            errorMsg = errData.error || errorMsg;
           } else {
+            const respText = await response.text();
+            console.error('Non-JSON error response:', respText);
             errorMsg = lang === 'ua'
               ? `Помилка сервера (код ${response.status}). Будь ласка, перевірте, чи встановлено API-ключ GEMINI_API_KEY у Settings > Secrets.`
               : `Server error (code ${response.status}). Keep in mind you must configure GEMINI_API_KEY in the Settings > Secrets tab first.`;
           }
+          throw new Error(errorMsg);
+        } else {
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error(lang === 'ua'
+              ? 'Отримано некоректну відповідь (не JSON) від сервера.'
+              : 'Invalid non-JSON response from the server.');
+          }
+          data = await response.json();
         }
-        throw new Error(errorMsg);
+      } catch (fetchErr: any) {
+        console.warn('Backend server returned error or cannot be reached. Checking local/static environment fallback...', fetchErr);
+        // Fallback to client-side API execution if the backend endpoint is not found or fails with CORS/network error
+        if (is404Error || fetchErr.message?.includes('404') || fetchErr.message?.includes('Failed to fetch')) {
+          data = await executeClientSideAnalyze(imageBase64, mimeType, lang);
+        } else {
+          throw fetchErr;
+        }
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(lang === 'ua'
-          ? 'Отримано некоректну відповідь (не JSON) від сервера.'
-          : 'Invalid non-JSON response from the server.');
+      if (is404Error && !data) {
+        data = await executeClientSideAnalyze(imageBase64, mimeType, lang);
       }
 
-      const data = await response.json();
+      if (!data) {
+        throw new Error(lang === 'ua' ? 'Не вдалося отримати дані аналізу.' : 'Failed to retrieve analysis data.');
+      }
 
       setName(data.name || '');
       const parsedWeight = Number(data.weightGrams) || 0;
@@ -338,47 +562,62 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     setEditMode(false);
 
     try {
-      const response = await fetch('/api/analyze-food-text', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: textQuery,
-          lang, // pass language
-        }),
-      });
+      let data: any = null;
+      let is404Error = false;
 
-      if (!response.ok) {
-        let errorMsg = lang === 'ua' ? 'Помилка сервера.' : 'Server error occurred.';
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const errData = await response.json();
-          errorMsg = errData.error || errorMsg;
-        } else {
-          const respText = await response.text();
-          console.error('Non-JSON error response:', respText);
-          if (response.status === 404) {
-            errorMsg = lang === 'ua' 
-              ? 'Ендпоінт /api/analyze-food-text не знайдено (код 404). Сервер перезапускається або конфігурується.' 
-              : 'Endpoint /api/analyze-food-text not found (404). Node server starts or misconfigured.';
+      try {
+        const response = await fetch('/api/analyze-food-text', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: textQuery,
+            lang, // pass language
+          }),
+        });
+
+        if (response.status === 404) {
+          is404Error = true;
+        } else if (!response.ok) {
+          let errorMsg = lang === 'ua' ? 'Помилка сервера.' : 'Server error occurred.';
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errData = await response.json();
+            errorMsg = errData.error || errorMsg;
           } else {
+            const respText = await response.text();
+            console.error('Non-JSON error response:', respText);
             errorMsg = lang === 'ua'
               ? `Помилка сервера (код ${response.status}). Будь ласка, перевірте встановлений API-ключ GEMINI_API_KEY в меню Settings.`
               : `Server error (code ${response.status}). Check if GEMINI_API_KEY is properly added under Settings > Secrets.`;
           }
+          throw new Error(errorMsg);
+        } else {
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error(lang === 'ua'
+              ? 'Отримано некоректну відповідь (не JSON) від сервера.'
+              : 'Invalid non-JSON response from the server.');
+          }
+          data = await response.json();
         }
-        throw new Error(errorMsg);
+      } catch (fetchErr: any) {
+        console.warn('Backend server returned error or cannot be reached. Checking local/static environment fallback...', fetchErr);
+        if (is404Error || fetchErr.message?.includes('404') || fetchErr.message?.includes('Failed to fetch')) {
+          data = await executeClientSideTextAnalyze(textQuery, lang);
+        } else {
+          throw fetchErr;
+        }
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(lang === 'ua'
-          ? 'Отримано некоректну відповідь (не JSON) від сервера.'
-          : 'Invalid non-JSON response from the server.');
+      if (is404Error && !data) {
+        data = await executeClientSideTextAnalyze(textQuery, lang);
       }
 
-      const data = await response.json();
+      if (!data) {
+        throw new Error(lang === 'ua' ? 'Не вдалося отримати дані аналізу.' : 'Failed to retrieve analysis data.');
+      }
 
       setName(data.name || '');
       const parsedWeight = Number(data.weightGrams) || 0;
