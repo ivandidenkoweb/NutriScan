@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (default deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. User Profile Rules
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming());
+      allow delete: if isOwner(userId);
+
+      function isValidUserProfile(data) {
+        return (data.isCalculated is bool) &&
+               (data.weightCc is int || data.weightCc is number) && data.weightCc >= 1 && data.weightCc <= 1000 &&
+               (data.heightCc is int || data.heightCc is number) && data.heightCc >= 10 && data.heightCc <= 300 &&
+               data.ageCc is int && data.ageCc >= 1 && data.ageCc <= 120 &&
+               (data.genderCc == 'male' || data.genderCc == 'female') &&
+               (data.activityLevelCc == 'sedentary' || data.activityLevelCc == 'light' || data.activityLevelCc == 'moderate' || data.activityLevelCc == 'active' || data.activityLevelCc == 'very_active') &&
+               (data.goalCc == 'lose' || data.goalCc == 'maintain' || data.goalCc == 'gain') &&
+               data.targetKcal is int && data.targetKcal >= 0 && data.targetKcal <= 10000 &&
+               data.targetProtein is int && data.targetProtein >= 0 && data.targetProtein <= 1000 &&
+               data.targetFat is int && data.targetFat >= 0 && data.targetFat <= 1000 &&
+               data.targetCarbs is int && data.targetCarbs >= 0 && data.targetCarbs <= 2000 &&
+               (!('username' in data) || (data.username is string && data.username.size() <= 200));
+      }
+
+      // 4. Subcollection - user meals
+      match /meals/{mealId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(mealId) && isValidFoodItem(incoming());
+        allow update: if isOwner(userId) && isValidId(mealId) && isValidFoodItem(incoming());
+        allow delete: if isOwner(userId) && isValidId(mealId);
+
+        function isValidFoodItem(data) {
+          return data.id is string && data.id.size() <= 128 &&
+                 data.date is string && data.date.size() == 10 &&
+                 data.timestamp is int &&
+                 data.name is string && data.name.size() > 0 && data.name.size() <= 400 &&
+                 (data.weightGrams is int || data.weightGrams is number) && data.weightGrams >= 0 && data.weightGrams <= 50000 &&
+                 (data.volumeMl is int || data.volumeMl is number) && data.volumeMl >= 0 && data.volumeMl <= 50000 &&
+                 (data.proteins is int || data.proteins is number) && data.proteins >= 0 && data.proteins <= 10000 &&
+                 (data.fats is int || data.fats is number) && data.fats >= 0 && data.fats <= 10000 &&
+                 (data.carbohydrates is int || data.carbohydrates is number) && data.carbohydrates >= 0 && data.carbohydrates <= 10000 &&
+                 data.kcal is int && data.kcal >= 0 && data.kcal <= 100000 &&
+                 data.explanation is string && data.explanation.size() <= 8192 &&
+                 (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1048576)) &&
+                 data.ingredients is list && data.ingredients.size() <= 100;
+        }
+      }
+
+      // 5. Subcollection - user water logs
+      match /water/{waterId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(waterId) && isValidWaterLog(incoming());
+        allow update: if isOwner(userId) && isValidId(waterId) && isValidWaterLog(incoming());
+        allow delete: if isOwner(userId) && isValidId(waterId);
+
+        function isValidWaterLog(data) {
+          return (data.amount is int || data.amount is number) && data.amount >= 0 && data.amount <= 100000 &&
+                 (data.target is int || data.target is number) && data.target >= 0 && data.target <= 100000 &&
+                 (data.updatedAt is int || data.updatedAt is number);
+        }
+      }
+    }
+  }
+}

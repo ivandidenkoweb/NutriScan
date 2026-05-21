@@ -1,0 +1,166 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with calories target, body parameters, and username settings",
+      "type": "object",
+      "properties": {
+        "isCalculated": {
+          "type": "boolean"
+        },
+        "weightCc": {
+          "type": "integer"
+        },
+        "heightCc": {
+          "type": "integer"
+        },
+        "ageCc": {
+          "type": "integer"
+        },
+        "genderCc": {
+          "type": "string",
+          "enum": ["male", "female"]
+        },
+        "activityLevelCc": {
+          "type": "string",
+          "enum": ["sedentary", "light", "moderate", "active", "very_active"]
+        },
+        "goalCc": {
+          "type": "string",
+          "enum": ["lose", "maintain", "gain"]
+        },
+        "targetKcal": {
+          "type": "integer"
+        },
+        "targetProtein": {
+          "type": "integer"
+        },
+        "targetFat": {
+          "type": "integer"
+        },
+        "targetCarbs": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "isCalculated",
+        "weightCc",
+        "heightCc",
+        "ageCc",
+        "genderCc",
+        "activityLevelCc",
+        "goalCc",
+        "targetKcal",
+        "targetProtein",
+        "targetFat",
+        "targetCarbs"
+      ]
+    },
+    "FoodItem": {
+      "title": "FoodItem",
+      "description": "Food consumption items registered by photo scanning or manual entries",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "weightGrams": {
+          "type": "integer"
+        },
+        "volumeMl": {
+          "type": "integer"
+        },
+        "proteins": {
+          "type": "number"
+        },
+        "fats": {
+          "type": "number"
+        },
+        "carbohydrates": {
+          "type": "number"
+        },
+        "kcal": {
+          "type": "integer"
+        },
+        "ingredients": {
+          "type": "array",
+          "description": "List of individual ingredients in the meal",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "weight": {
+                "type": "number"
+              }
+            },
+            "required": ["name", "weight"]
+          }
+        },
+        "explanation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "date",
+        "timestamp",
+        "name",
+        "weightGrams",
+        "volumeMl",
+        "proteins",
+        "fats",
+        "carbohydrates",
+        "kcal",
+        "explanation"
+      ]
+    },
+    "WaterLog": {
+      "title": "WaterLog",
+      "description": "Daily water tracking logs",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "integer"
+        },
+        "target": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "integer"
+        }
+      },
+      "required": ["amount", "target", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with core budget goals linked by Google Authentication uid"
+    },
+    "/users/{userId}/meals/{mealId}": {
+      "schema": "FoodItem",
+      "description": "Detailed meals consumed by a user referenced by the meal ID"
+    },
+    "/users/{userId}/water/{waterDate}": {
+      "schema": "WaterLog",
+      "description": "Daily liquid logs for a user referenced by a hyphenated date string key"
+    }
+  }
+}

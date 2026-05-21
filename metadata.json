@@ -1,0 +1,6 @@
+{
+  "name": "Calorie Tracker & Photo Food Calculator",
+  "description": "An app that estimates food weight, volume, calorie, and macro content from photos, provides consumption history, and calculates personalized daily energy requirements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
