@@ -157,9 +157,31 @@ export default function App() {
 
   // 2. Manage Authentication State & Subscriptions
   useEffect(() => {
+    let unsubscribeProfile: (() => void) | null = null;
+    let unsubscribeMeals: (() => void) | null = null;
+    let unsubscribeWater: (() => void) | null = null;
+
+    const cleanupSubscriptions = () => {
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+      if (unsubscribeMeals) {
+        unsubscribeMeals();
+        unsubscribeMeals = null;
+      }
+      if (unsubscribeWater) {
+        unsubscribeWater();
+        unsubscribeWater = null;
+      }
+    };
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       
+      // Clear previous active subscriptions first
+      cleanupSubscriptions();
+
       if (currentUser) {
         const uid = currentUser.uid;
         
@@ -239,7 +261,7 @@ export default function App() {
         }
 
         // Setup real-time listeners for User Profile & Username
-        const unsubscribeProfile = onSnapshot(doc(db, 'users', uid), (snapshot) => {
+        unsubscribeProfile = onSnapshot(doc(db, 'users', uid), (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.data();
             setProfile({
@@ -271,7 +293,7 @@ export default function App() {
         });
 
         // Setup real-time listener for user meals subcollection
-        const unsubscribeMeals = onSnapshot(collection(db, 'users', uid, 'meals'), (snapshot) => {
+        unsubscribeMeals = onSnapshot(collection(db, 'users', uid, 'meals'), (snapshot) => {
           const items: FoodItem[] = [];
           snapshot.forEach((mealDoc) => {
             const data = mealDoc.data();
@@ -303,7 +325,7 @@ export default function App() {
         });
 
         // Setup real-time listener for user water subcollection
-        const unsubscribeWater = onSnapshot(collection(db, 'users', uid, 'water'), (snapshot) => {
+        unsubscribeWater = onSnapshot(collection(db, 'users', uid, 'water'), (snapshot) => {
           const syncedWater: Record<string, { amount: number; target: number }> = {};
           snapshot.forEach((waterDoc) => {
             const data = waterDoc.data();
@@ -321,11 +343,6 @@ export default function App() {
         });
 
         setAuthLoading(false);
-        return () => {
-          unsubscribeProfile();
-          unsubscribeMeals();
-          unsubscribeWater();
-        };
 
       } else {
         // Safe reset if user is signed out
@@ -336,7 +353,10 @@ export default function App() {
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      cleanupSubscriptions();
+    };
   }, [lang]);
 
   const handleManualSync = () => {
@@ -901,13 +921,9 @@ export default function App() {
             {bmiValue > 0 && (
               <div className="flex justify-between items-center mt-1 pt-1 border-t border-dashed border-zinc-805/10 dark:border-zinc-800/40">
                 <span className="text-zinc-500 font-medium font-sans">{t.bmiValueTitle}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-xs">{bmiValue}</span>
-                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-widest ${bmiCat.bg} ${bmiCat.color} flex items-center gap-1`}>
-                    <span className={`w-1 h-1 rounded-full ${bmiCat.dotColor}`}></span>
-                    {bmiCat.label}
-                  </span>
-                </div>
+                <span className="font-bold text-xs">
+                  {bmiValue} <span className="text-zinc-400 dark:text-zinc-500 font-medium">/ 18.5-24.9</span>
+                </span>
               </div>
             )}
             <div className={`h-[1px] my-2 ${isDark ? 'bg-zinc-800' : 'bg-[#E2E8E4]'}`}></div>

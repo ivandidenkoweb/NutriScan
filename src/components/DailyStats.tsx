@@ -57,7 +57,9 @@ export default function DailyStats({
         <span>{t.todaySummary}</span>
         <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter ${
           isDark ? 'bg-zinc-800 text-[#89FFA0]' : 'bg-[#DCEEE0] text-[#2D5A27]'
-        }`}>КБЖУ / Macros</span>
+        }`}>
+          {lang === 'ua' ? 'БЖУ / ККАЛ' : 'PFC / KCAL'}
+        </span>
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -149,7 +151,7 @@ export default function DailyStats({
           <div className="space-y-1.5">
             <div className="flex justify-between items-baseline">
               <span className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-[#1A1C1B]'}`}>
-                <span className={`w-2.5 h-2.5 rounded-full inline-block ${isDark ? 'bg-sky-400' : 'bg-[#C7D1C9]'}`}></span>
+                <span className={`w-2.5 h-2.5 rounded-full inline-block ${isDark ? 'bg-[#A2C3A8]' : 'bg-[#718B76]'}`}></span>
                 {t.carbs}
               </span>
               <span className={`text-xs font-semibold font-mono ${isDark ? 'text-zinc-400' : 'text-[#4A5D4E]'}`}>
@@ -159,7 +161,7 @@ export default function DailyStats({
             <div className={`w-full h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-[#E2E8E4]'}`}>
               <div
                 style={{ width: `${Math.min(100, carbsPercent)}%` }}
-                className={`h-full rounded-full transition-all duration-500 ease-out ${isDark ? 'bg-sky-400' : 'bg-[#C7D1C9]'}`}
+                className={`h-full rounded-full transition-all duration-500 ease-out ${isDark ? 'bg-[#A2C3A8]' : 'bg-[#718B76]'}`}
               ></div>
             </div>
           </div>
