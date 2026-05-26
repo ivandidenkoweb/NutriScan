@@ -9,6 +9,7 @@ import TdeeCalculator from './components/TdeeCalculator';
 import FoodUploader from './components/FoodUploader';
 import DailyStats from './components/DailyStats';
 import FoodDiaryList from './components/FoodDiaryList';
+import GlassmorphicAppleLogo from './components/GlassmorphicAppleLogo';
 import { translations } from './locales';
 import { 
   Calendar, 
@@ -662,11 +663,14 @@ export default function App() {
         <div className="flex-1 bg-gradient-to-br from-[#2D5A27] via-[#1F3E1B] to-[#142911] text-white p-8 sm:p-16 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,238,224,0.15),transparent)] pointer-events-none"></div>
           
-          <div className="relative z-10">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight flex items-center gap-2">
-              NutriScan<span className="text-[#89FFA0]">.</span>
-            </h1>
-            <p className="text-xs text-[#DCEEE0] font-medium mt-1 uppercase tracking-widest">{t.appSubtitle}</p>
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
+            <GlassmorphicAppleLogo size="lg" theme="dark" />
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight flex items-center gap-2">
+                NutriScan<span className="text-[#89FFA0]">.</span>
+              </h1>
+              <p className="text-xs text-[#DCEEE0] font-medium mt-1 uppercase tracking-widest">{t.appSubtitle}</p>
+            </div>
           </div>
 
           <div className="my-12 sm:my-20 space-y-8 relative z-10 max-w-lg">
@@ -792,9 +796,14 @@ export default function App() {
         isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#E2E8E4]'
       }`}>
         <div className="mb-4 flex justify-between items-start">
-          <div>
-            <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#2D5A27]'}`}>NutriScan.</h1>
-            <p className={`text-xs font-medium mt-0.5 ${isDark ? 'text-zinc-500' : 'text-[#4A5D4E]'}`}>{t.appSubtitle}</p>
+          <div className="flex gap-2.5 items-center">
+            <GlassmorphicAppleLogo size="sm" theme={isDark ? 'dark' : 'light'} />
+            <div>
+              <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#2D5A27]'}`}>
+                NutriScan<span className={isDark ? "text-[#89FFA0]" : "text-[#2D5A27]"}>.</span>
+              </h1>
+              <p className={`text-[10px] font-semibold mt-0.5 ${isDark ? 'text-zinc-500' : 'text-[#4A5D4E]'}`}>{t.appSubtitle}</p>
+            </div>
           </div>
           <button
             onClick={handleToggleCalculator}

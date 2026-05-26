@@ -17,9 +17,9 @@ interface TdeeCalculatorProps {
 }
 
 export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel, lang, theme }: TdeeCalculatorProps) {
-  const [weight, setWeight] = useState<number>(currentProfile.weightCc || 70);
-  const [height, setHeight] = useState<number>(currentProfile.heightCc || 170);
-  const [age, setAge] = useState<number>(currentProfile.ageCc || 25);
+  const [weight, setWeight] = useState<number | ''>(currentProfile.weightCc || 70);
+  const [height, setHeight] = useState<number | ''>(currentProfile.heightCc || 170);
+  const [age, setAge] = useState<number | ''>(currentProfile.ageCc || 25);
   const [gender, setGender] = useState<'male' | 'female'>(currentProfile.genderCc || 'female');
   const [activity, setActivity] = useState<UserProfile['activityLevelCc']>(currentProfile.activityLevelCc || 'moderate');
   const [goal, setGoal] = useState<UserProfile['goalCc']>(currentProfile.goalCc || 'maintain');
@@ -37,12 +37,16 @@ export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel
   } | null>(null);
 
   const calculateDefaultTargets = () => {
+    const w = Number(weight) || 70;
+    const h = Number(height) || 170;
+    const a = Number(age) || 25;
+
     // Mifflin-St Jeor Equation
     let bmr = 0;
     if (gender === 'male') {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+      bmr = 10 * w + 6.25 * h - 5 * a + 5;
     } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+      bmr = 10 * w + 6.25 * h - 5 * a - 161;
     }
 
     // Activity Multipliers
@@ -67,11 +71,11 @@ export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel
     // Protein calculation
     let proteinGrams = 0;
     if (goal === 'lose') {
-      proteinGrams = Math.round(weight * 2.0);
+      proteinGrams = Math.round(w * 2.0);
     } else if (goal === 'gain') {
-      proteinGrams = Math.round(weight * 1.8);
+      proteinGrams = Math.round(w * 1.8);
     } else {
-      proteinGrams = Math.round(weight * 1.6);
+      proteinGrams = Math.round(w * 1.6);
     }
     proteinGrams = Math.max(50, Math.min(220, proteinGrams));
 
@@ -108,9 +112,9 @@ export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel
     const activeResult = result || calculateDefaultTargets();
     onSaveProfile({
       isCalculated: true,
-      weightCc: weight,
-      heightCc: height,
-      ageCc: age,
+      weightCc: Number(weight) || 70,
+      heightCc: Number(height) || 170,
+      ageCc: Number(age) || 25,
       genderCc: gender,
       activityLevelCc: activity,
       goalCc: goal,
@@ -181,7 +185,10 @@ export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel
               max="100"
               required
               value={age}
-              onChange={(e) => setAge(Math.max(1, parseInt(e.target.value) || 0))}
+              onChange={(e) => {
+                const val = e.target.value;
+                setAge(val === '' ? '' : parseInt(val) || 0);
+              }}
               className={`w-full h-11 px-3.5 rounded-xl border outline-none text-sm font-medium transition-all ${
                 isDark 
                   ? 'bg-zinc-950 border-zinc-800 text-white focus:border-[#89FFA0] focus:ring-1 focus:ring-[#89FFA0]/30' 
@@ -200,7 +207,10 @@ export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel
               max="250"
               required
               value={height}
-              onChange={(e) => setHeight(Math.max(1, parseInt(e.target.value) || 0))}
+              onChange={(e) => {
+                const val = e.target.value;
+                setHeight(val === '' ? '' : parseInt(val) || 0);
+              }}
               className={`w-full h-11 px-3.5 rounded-xl border outline-none text-sm font-medium transition-all ${
                 isDark 
                   ? 'bg-zinc-950 border-zinc-800 text-white focus:border-[#89FFA0] focus:ring-1 focus:ring-[#89FFA0]/30' 
@@ -219,7 +229,10 @@ export default function TdeeCalculator({ currentProfile, onSaveProfile, onCancel
               max="250"
               required
               value={weight}
-              onChange={(e) => setWeight(Math.max(1, parseInt(e.target.value) || 0))}
+              onChange={(e) => {
+                const val = e.target.value;
+                setWeight(val === '' ? '' : parseFloat(val) || 0);
+              }}
               className={`w-full h-11 px-3.5 rounded-xl border outline-none text-sm font-medium transition-all ${
                 isDark 
                   ? 'bg-zinc-950 border-zinc-800 text-white focus:border-[#89FFA0] focus:ring-1 focus:ring-[#89FFA0]/30' 

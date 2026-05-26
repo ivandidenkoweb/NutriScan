@@ -47,13 +47,13 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
   // Editable fields for parsed food item
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState('');
-  const [weightGrams, setWeightGrams] = useState(150);
-  const [volumeMl, setVolumeMl] = useState(0);
-  const [proteins, setProteins] = useState(0);
-  const [fats, setFats] = useState(0);
-  const [carbs, setCarbs] = useState(0);
-  const [kcal, setKcal] = useState(0);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [weightGrams, setWeightGrams] = useState<number | ''>(150);
+  const [volumeMl, setVolumeMl] = useState<number | ''>(0);
+  const [proteins, setProteins] = useState<number | ''>(0);
+  const [fats, setFats] = useState<number | ''>(0);
+  const [carbs, setCarbs] = useState<number | ''>(0);
+  const [kcal, setKcal] = useState<number | ''>(0);
+  const [ingredients, setIngredients] = useState<any[]>([]);
   const [explanation, setExplanation] = useState('');
 
   // Baseline values from AI analysis for dynamic scaling recalculation
@@ -67,10 +67,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     ingredients: Ingredient[];
   } | null>(null);
 
-  const handleWeightChange = (newWeight: number) => {
+  const handleWeightChange = (newWeight: number | '') => {
     setWeightGrams(newWeight);
+    const weightNum = newWeight === '' ? 0 : newWeight;
     if (baseValues && baseValues.weightGrams > 0) {
-      const ratio = newWeight / baseValues.weightGrams;
+      const ratio = weightNum / baseValues.weightGrams;
       setProteins(parseFloat((baseValues.proteins * ratio).toFixed(1)));
       setFats(parseFloat((baseValues.fats * ratio).toFixed(1)));
       setCarbs(parseFloat((baseValues.carbs * ratio).toFixed(1)));
@@ -86,10 +87,11 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     }
   };
 
-  const handleVolumeChange = (newVolume: number) => {
+  const handleVolumeChange = (newVolume: number | '') => {
     setVolumeMl(newVolume);
+    const volumeNum = newVolume === '' ? 0 : newVolume;
     if (baseValues && baseValues.volumeMl > 0) {
-      const ratio = newVolume / baseValues.volumeMl;
+      const ratio = volumeNum / baseValues.volumeMl;
       setProteins(parseFloat((baseValues.proteins * ratio).toFixed(1)));
       setFats(parseFloat((baseValues.fats * ratio).toFixed(1)));
       setCarbs(parseFloat((baseValues.carbs * ratio).toFixed(1)));
@@ -105,19 +107,28 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
     }
   };
 
-  const handleProteinChange = (newProteins: number) => {
+  const handleProteinChange = (newProteins: number | '') => {
     setProteins(newProteins);
-    setKcal(Math.round(newProteins * 4 + fats * 9 + carbs * 4));
+    const p = newProteins === '' ? 0 : newProteins;
+    const f = fats === '' ? 0 : fats;
+    const c = carbs === '' ? 0 : carbs;
+    setKcal(Math.round(p * 4 + f * 9 + c * 4));
   };
 
-  const handleFatChange = (newFats: number) => {
+  const handleFatChange = (newFats: number | '') => {
     setFats(newFats);
-    setKcal(Math.round(proteins * 4 + newFats * 9 + carbs * 4));
+    const p = proteins === '' ? 0 : proteins;
+    const f = newFats === '' ? 0 : newFats;
+    const c = carbs === '' ? 0 : carbs;
+    setKcal(Math.round(p * 4 + f * 9 + c * 4));
   };
 
-  const handleCarbChange = (newCarbs: number) => {
+  const handleCarbChange = (newCarbs: number | '') => {
     setCarbs(newCarbs);
-    setKcal(Math.round(proteins * 4 + fats * 9 + newCarbs * 4));
+    const p = proteins === '' ? 0 : proteins;
+    const f = fats === '' ? 0 : fats;
+    const c = newCarbs === '' ? 0 : newCarbs;
+    setKcal(Math.round(p * 4 + f * 9 + c * 4));
   };
   
   // Custom meal date state - can be overridden during food save
@@ -1009,7 +1020,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                   <input
                     type="number"
                     value={weightGrams}
-                    onChange={(e) => handleWeightChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleWeightChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                    }}
                     className={`w-full px-2.5 py-1.5 text-sm border focus:ring-1 rounded-lg outline-none ${
                       isDark 
                         ? 'bg-[#0B120C] border-[#1E3A20] text-white focus:border-[#89FFA0]' 
@@ -1022,7 +1036,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                   <input
                     type="number"
                     value={volumeMl}
-                    onChange={(e) => handleVolumeChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleVolumeChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                    }}
                     className={`w-full px-2.5 py-1.5 text-sm border focus:ring-1 rounded-lg outline-none ${
                       isDark 
                         ? 'bg-[#0B120C] border-[#1E3A20] text-white focus:border-[#89FFA0]' 
@@ -1038,7 +1055,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 <input
                   type="number"
                   value={kcal}
-                  onChange={(e) => setKcal(Math.max(0, parseInt(e.target.value) || 0))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setKcal(val === '' ? '' : Math.max(0, parseInt(val) || 0));
+                  }}
                   className={`w-full px-2.5 py-1.5 text-sm font-bold border focus:ring-1 rounded-lg outline-none ${
                     isDark
                       ? 'bg-[#89FFA0]/15 border-[#1E3A20] text-[#89FFA0] focus:border-[#89FFA0]'
@@ -1059,7 +1079,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 type="number"
                 step="0.1"
                 value={proteins}
-                onChange={(e) => handleProteinChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleProteinChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                }}
                 className={`w-full py-1 text-center text-xs border rounded-md outline-none font-mono ${
                   isDark 
                     ? 'bg-[#132515] border-[#1E3E21] text-[#89FFA0] focus:border-[#89FFA0]' 
@@ -1073,7 +1096,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 type="number"
                 step="0.1"
                 value={fats}
-                onChange={(e) => handleFatChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleFatChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                }}
                 className={`w-full py-1 text-center text-xs border rounded-md outline-none font-mono ${
                   isDark 
                     ? 'bg-[#132515] border-[#1E3E21] text-[#34D399] focus:border-[#89FFA0]' 
@@ -1087,7 +1113,10 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
                 type="number"
                 step="0.1"
                 value={carbs}
-                onChange={(e) => handleCarbChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleCarbChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                }}
                 className={`w-full py-1 text-center text-xs border rounded-md outline-none font-mono ${
                   isDark 
                     ? 'bg-[#132515] border-[#1E3E21] text-[#A2C3A8] focus:border-[#89FFA0]' 

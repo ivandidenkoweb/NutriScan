@@ -30,12 +30,12 @@ export default function FoodDiaryList({
   
   // Edit form states
   const [editName, setEditName] = useState('');
-  const [editWeight, setEditWeight] = useState(0);
-  const [editVolume, setEditVolume] = useState(0);
-  const [editProteins, setEditProteins] = useState(0);
-  const [editFats, setEditFats] = useState(0);
-  const [editCarbohydrates, setEditCarbohydrates] = useState(0);
-  const [editKcal, setEditKcal] = useState(0);
+  const [editWeight, setEditWeight] = useState<number | ''>(0);
+  const [editVolume, setEditVolume] = useState<number | ''>(0);
+  const [editProteins, setEditProteins] = useState<number | ''>(0);
+  const [editFats, setEditFats] = useState<number | ''>(0);
+  const [editCarbohydrates, setEditCarbohydrates] = useState<number | ''>(0);
+  const [editKcal, setEditKcal] = useState<number | ''>(0);
   const [editExplanation, setEditExplanation] = useState('');
 
   // Baseline item snapshot for scaling recalculations
@@ -48,10 +48,11 @@ export default function FoodDiaryList({
     kcal: number;
   } | null>(null);
 
-  const handleEditWeightChange = (newWeight: number) => {
+  const handleEditWeightChange = (newWeight: number | '') => {
     setEditWeight(newWeight);
+    const wNum = newWeight === '' ? 0 : newWeight;
     if (baseItem && baseItem.weightGrams > 0) {
-      const ratio = newWeight / baseItem.weightGrams;
+      const ratio = wNum / baseItem.weightGrams;
       setEditProteins(parseFloat((baseItem.proteins * ratio).toFixed(1)));
       setEditFats(parseFloat((baseItem.fats * ratio).toFixed(1)));
       setEditCarbohydrates(parseFloat((baseItem.carbohydrates * ratio).toFixed(1)));
@@ -59,10 +60,11 @@ export default function FoodDiaryList({
     }
   };
 
-  const handleEditVolumeChange = (newVolume: number) => {
+  const handleEditVolumeChange = (newVolume: number | '') => {
     setEditVolume(newVolume);
+    const vNum = newVolume === '' ? 0 : newVolume;
     if (baseItem && baseItem.volumeMl > 0) {
-      const ratio = newVolume / baseItem.volumeMl;
+      const ratio = vNum / baseItem.volumeMl;
       setEditProteins(parseFloat((baseItem.proteins * ratio).toFixed(1)));
       setEditFats(parseFloat((baseItem.fats * ratio).toFixed(1)));
       setEditCarbohydrates(parseFloat((baseItem.carbohydrates * ratio).toFixed(1)));
@@ -70,19 +72,28 @@ export default function FoodDiaryList({
     }
   };
 
-  const handleEditProteinChange = (newProteins: number) => {
+  const handleEditProteinChange = (newProteins: number | '') => {
     setEditProteins(newProteins);
-    setEditKcal(Math.round(newProteins * 4 + editFats * 9 + editCarbohydrates * 4));
+    const p = newProteins === '' ? 0 : newProteins;
+    const f = editFats === '' ? 0 : editFats;
+    const c = editCarbohydrates === '' ? 0 : editCarbohydrates;
+    setEditKcal(Math.round(p * 4 + f * 9 + c * 4));
   };
 
-  const handleEditFatChange = (newFats: number) => {
+  const handleEditFatChange = (newFats: number | '') => {
     setEditFats(newFats);
-    setEditKcal(Math.round(editProteins * 4 + newFats * 9 + editCarbohydrates * 4));
+    const p = editProteins === '' ? 0 : editProteins;
+    const f = newFats === '' ? 0 : newFats;
+    const c = editCarbohydrates === '' ? 0 : editCarbohydrates;
+    setEditKcal(Math.round(p * 4 + f * 9 + c * 4));
   };
 
-  const handleEditCarbChange = (newCarbs: number) => {
+  const handleEditCarbChange = (newCarbs: number | '') => {
     setEditCarbohydrates(newCarbs);
-    setEditKcal(Math.round(editProteins * 4 + editFats * 9 + newCarbs * 4));
+    const p = editProteins === '' ? 0 : editProteins;
+    const f = editFats === '' ? 0 : editFats;
+    const c = newCarbs === '' ? 0 : newCarbs;
+    setEditKcal(Math.round(p * 4 + f * 9 + c * 4));
   };
 
   const isDark = theme === 'dark';
@@ -312,8 +323,11 @@ export default function FoodDiaryList({
                             </label>
                             <input
                               type="number"
-                              value={editWeight || ''}
-                              onChange={(e) => handleEditWeightChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                              value={editWeight}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleEditWeightChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                              }}
                               className={`w-full p-2 text-xs font-mono rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-white' 
@@ -329,8 +343,11 @@ export default function FoodDiaryList({
                             </label>
                             <input
                               type="number"
-                              value={editVolume || ''}
-                              onChange={(e) => handleEditVolumeChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                              value={editVolume}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleEditVolumeChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                              }}
                               className={`w-full p-2 text-xs font-mono rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-white' 
@@ -351,8 +368,11 @@ export default function FoodDiaryList({
                             <input
                               type="number"
                               step="0.1"
-                              value={editProteins || ''}
-                              onChange={(e) => handleEditProteinChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                              value={editProteins}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleEditProteinChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                              }}
                               className={`w-full p-2 text-xs font-mono text-center rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-[#89FFA0]' 
@@ -369,8 +389,11 @@ export default function FoodDiaryList({
                             <input
                               type="number"
                               step="0.1"
-                              value={editFats || ''}
-                              onChange={(e) => handleEditFatChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                              value={editFats}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleEditFatChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                              }}
                               className={`w-full p-2 text-xs font-mono text-center rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-[#34D399]' 
@@ -387,8 +410,11 @@ export default function FoodDiaryList({
                             <input
                               type="number"
                               step="0.1"
-                              value={editCarbohydrates || ''}
-                              onChange={(e) => handleEditCarbChange(Math.max(0, parseFloat(e.target.value) || 0))}
+                              value={editCarbohydrates}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleEditCarbChange(val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+                              }}
                               className={`w-full p-2 text-xs font-mono text-center rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-[#A2C3A8]' 
@@ -408,8 +434,11 @@ export default function FoodDiaryList({
                             </label>
                             <input
                               type="number"
-                              value={editKcal || ''}
-                              onChange={(e) => setEditKcal(Math.max(0, Math.round(parseFloat(e.target.value) || 0)))}
+                              value={editKcal}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditKcal(val === '' ? '' : Math.max(0, Math.round(parseFloat(val) || 0)));
+                              }}
                               className={`w-full p-2 text-xs font-mono rounded-xl border focus:ring-1 focus:outline-none transition-all ${
                                 isDark 
                                   ? 'bg-zinc-950 border-zinc-800 focus:ring-[#89FFA0] text-white' 
@@ -455,12 +484,12 @@ export default function FoodDiaryList({
                               const updated: FoodItem = {
                                 ...item,
                                 name: editName.trim() || item.name,
-                                weightGrams: editWeight,
-                                volumeMl: editVolume,
-                                proteins: editProteins,
-                                fats: editFats,
-                                carbohydrates: editCarbohydrates,
-                                kcal: editKcal,
+                                weightGrams: Number(editWeight) || 0,
+                                volumeMl: Number(editVolume) || 0,
+                                proteins: Number(editProteins) || 0,
+                                fats: Number(editFats) || 0,
+                                carbohydrates: Number(editCarbohydrates) || 0,
+                                kcal: Number(editKcal) || 0,
                                 explanation: editExplanation,
                               };
                               onUpdateItem(item.id, updated);
