@@ -41,54 +41,40 @@ async function generateContentWithFallback(
     config: any;
   }
 ) {
-  const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+  // Ordered from newest/preferred to highly available fallback options
+  const modelsToTry = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
-    let attempts = 2; // Try up to 2 times for each model
-    for (let attempt = 1; attempt <= attempts; attempt++) {
-      try {
-        console.log(`[AI] Attempting generateContent with model: ${model} (attempt ${attempt}/${attempts})`);
-        const response = await ai.models.generateContent({
-          model,
-          contents: params.contents,
-          config: params.config,
-        });
-        return response;
-      } catch (error: any) {
-        lastError = error;
-        const errMessage = error.message || '';
-        console.error(`[AI] Error with model ${model} (attempt ${attempt}/${attempts}):`, error);
+    try {
+      console.log(`[AI] Attempting generateContent with model: ${model}`);
+      const response = await ai.models.generateContent({
+        model,
+        contents: params.contents,
+        config: params.config,
+      });
+      return response;
+    } catch (error: any) {
+      lastError = error;
+      const errMessage = error?.message || 'Unknown error';
+      console.error(`[AI] Error with model ${model}:`, errMessage);
 
-        // Check if the error is temporary / capacity related
-        const isTemporary = 
-          errMessage.includes('503') ||
-          errMessage.includes('UNAVAILABLE') ||
-          errMessage.includes('high demand') ||
-          errMessage.includes('Overloaded') ||
-          errMessage.includes('429') ||
-          errMessage.includes('Resource has been exhausted') ||
-          error.status === 503 ||
-          error.status === 429;
-
-        if (!isTemporary) {
-          // If it's a structural config/parameter/auth error, throw immediately
-          if (errMessage.includes('API_KEY') || errMessage.includes('key')) {
-            throw error;
-          }
-        }
-
-        if (attempt < attempts && isTemporary) {
-          const delay = attempt * 1000;
-          console.log(`[AI] Temporary error. Waiting ${delay}ms before retrying ${model}...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
+      // If it's a configuration/API credential/schema validation error, propagate it immediately
+      if (
+        errMessage.includes('API_KEY') || 
+        errMessage.includes('key missing') || 
+        errMessage.includes('INVALID_ARGUMENT') ||
+        error.status === 400 || 
+        error.status === 403
+      ) {
+        throw error;
       }
+
+      console.warn(`[AI] Model ${model} is temporarily unavailable or returned an error. Switching to fallback instantly...`);
     }
-    console.warn(`[AI] Model ${model} failed all attempts or is overloaded. Trying next fallback model...`);
   }
 
-  throw lastError || new Error('All models failed to generate content');
+  throw lastError || new Error('All fallback culinary-AI models failed to reply due to high global load. Please retry again in a moment.');
 }
 
 async function startServer() {
