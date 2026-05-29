@@ -340,23 +340,44 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       required: ["name", "weightGrams", "volumeMl", "proteins", "fats", "carbohydrates", "kcal", "ingredients", "explanation"]
     };
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: [imagePart, { text: promptText }],
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema,
-        temperature: 0.2
-      }
-    });
+    const modelsToTry = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+    let lastError: any = null;
+    let responseText = '';
 
-    const responseText = response.text;
+    for (const model of modelsToTry) {
+      try {
+        console.log(`[Client AI] Attempting image model: ${model}`);
+        const response = await Promise.race([
+          ai.models.generateContent({
+            model,
+            contents: [imagePart, { text: promptText }],
+            config: {
+              systemInstruction,
+              responseMimeType: "application/json",
+              responseSchema,
+              temperature: 0.2
+            }
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout: Model ${model} took too long to respond`)), 12000)
+          )
+        ]);
+
+        if (response && response.text) {
+          responseText = response.text;
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[Client AI] Image model ${model} failed:`, err?.message || err);
+      }
+    }
+
     if (!responseText) {
-      throw new Error(
+      throw lastError || new Error(
         lang === 'ua'
-          ? "Gemini API повернув порожню відповідь за прямого запиту."
-          : "Gemini API returned an empty response during direct request."
+          ? "Усі спроби з'єднання з ШІ були відхилені або API-ключ недійсний."
+          : "All connection attempts to AI were rejected, or the API key is invalid."
       );
     }
 
@@ -440,23 +461,44 @@ export default function FoodUploader({ activeDate, onSaveFoodItem, lang, theme }
       required: ["name", "weightGrams", "volumeMl", "proteins", "fats", "carbohydrates", "kcal", "ingredients", "explanation"]
     };
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: [{ text: promptText }],
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema,
-        temperature: 0.2
-      }
-    });
+    const modelsToTry = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+    let lastError: any = null;
+    let responseText = '';
 
-    const responseText = response.text;
+    for (const model of modelsToTry) {
+      try {
+        console.log(`[Client AI] Attempting text model: ${model}`);
+        const response = await Promise.race([
+          ai.models.generateContent({
+            model,
+            contents: [{ text: promptText }],
+            config: {
+              systemInstruction,
+              responseMimeType: "application/json",
+              responseSchema,
+              temperature: 0.2
+            }
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout: Model ${model} took too long to respond`)), 12000)
+          )
+        ]);
+
+        if (response && response.text) {
+          responseText = response.text;
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[Client AI] Text model ${model} failed:`, err?.message || err);
+      }
+    }
+
     if (!responseText) {
-      throw new Error(
+      throw lastError || new Error(
         lang === 'ua'
-          ? "Gemini API повернув порожню відповідь за прямого запиту."
-          : "Gemini API returned an empty response during direct request."
+          ? "Усі спроби з'єднання з ШІ були відхилені/перевантажені або API-ключ недійсний."
+          : "All connection attempts to AI were rejected/overloaded, or the API key is invalid."
       );
     }
 
