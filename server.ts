@@ -34,6 +34,63 @@ function getAIClient(): GoogleGenAI {
   return aiClient;
 }
 
+async function generateContentWithFallback(
+  ai: GoogleGenAI,
+  params: {
+    contents: any;
+    config: any;
+  }
+) {
+  const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    let attempts = 2; // Try up to 2 times for each model
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        console.log(`[AI] Attempting generateContent with model: ${model} (attempt ${attempt}/${attempts})`);
+        const response = await ai.models.generateContent({
+          model,
+          contents: params.contents,
+          config: params.config,
+        });
+        return response;
+      } catch (error: any) {
+        lastError = error;
+        const errMessage = error.message || '';
+        console.error(`[AI] Error with model ${model} (attempt ${attempt}/${attempts}):`, error);
+
+        // Check if the error is temporary / capacity related
+        const isTemporary = 
+          errMessage.includes('503') ||
+          errMessage.includes('UNAVAILABLE') ||
+          errMessage.includes('high demand') ||
+          errMessage.includes('Overloaded') ||
+          errMessage.includes('429') ||
+          errMessage.includes('Resource has been exhausted') ||
+          error.status === 503 ||
+          error.status === 429;
+
+        if (!isTemporary) {
+          // If it's a structural config/parameter/auth error, throw immediately
+          if (errMessage.includes('API_KEY') || errMessage.includes('key')) {
+            throw error;
+          }
+        }
+
+        if (attempt < attempts && isTemporary) {
+          const delay = attempt * 1000;
+          console.log(`[AI] Temporary error. Waiting ${delay}ms before retrying ${model}...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+    console.warn(`[AI] Model ${model} failed all attempts or is overloaded. Trying next fallback model...`);
+  }
+
+  throw lastError || new Error('All models failed to generate content');
+}
+
 async function startServer() {
   const app = express();
 
@@ -164,8 +221,7 @@ async function startServer() {
         required: ["name", "weightGrams", "volumeMl", "proteins", "fats", "carbohydrates", "kcal", "ingredients", "explanation"]
       };
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+      const response = await generateContentWithFallback(ai, {
         contents: [imagePart, { text: promptText }],
         config: {
           systemInstruction,
@@ -290,8 +346,7 @@ async function startServer() {
         required: ["name", "weightGrams", "volumeMl", "proteins", "fats", "carbohydrates", "kcal", "ingredients", "explanation"]
       };
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+      const response = await generateContentWithFallback(ai, {
         contents: [{ text: promptText }],
         config: {
           systemInstruction,
