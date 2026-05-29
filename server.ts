@@ -41,18 +41,27 @@ async function generateContentWithFallback(
     config: any;
   }
 ) {
-  // Ordered from newest/preferred to highly available fallback options
-  const modelsToTry = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+  // 'gemini-flash-latest' is the most stable, reliable and highly available model for personal/free-tier API keys, answering instantly.
+  // We place it first to avoid 503 Overloaded/Unavailable errors and long timeouts associated with experimental 'gemini-3.5-flash'.
+  const modelsToTry = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
     try {
       console.log(`[AI] Attempting generateContent with model: ${model}`);
-      const response = await ai.models.generateContent({
-        model,
-        contents: params.contents,
-        config: params.config,
-      });
+      
+      // Enforce a 12-second timeout per model so if one hangs under load, we switch to the next fallback instantly
+      const response = await Promise.race([
+        ai.models.generateContent({
+          model,
+          contents: params.contents,
+          config: params.config,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout: Model ${model} took too long to respond`)), 12000)
+        )
+      ]);
+      
       return response;
     } catch (error: any) {
       lastError = error;
