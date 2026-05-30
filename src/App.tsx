@@ -9,6 +9,7 @@ import TdeeCalculator from './components/TdeeCalculator';
 import FoodUploader from './components/FoodUploader';
 import DailyStats from './components/DailyStats';
 import FoodDiaryList from './components/FoodDiaryList';
+import HistoryAnalytics from './components/HistoryAnalytics';
 import GlassmorphicAppleLogo from './components/GlassmorphicAppleLogo';
 import { translations } from './locales';
 import { 
@@ -29,7 +30,10 @@ import {
   Droplet,
   Plus,
   Minus,
-  RotateCcw
+  RotateCcw,
+  BarChart3,
+  X,
+  Menu
 } from 'lucide-react';
 import { 
   db, 
@@ -90,6 +94,8 @@ export default function App() {
     return `${year}-${month}-${day}`;
   });
   const [showCalculator, setShowCalculator] = useState<boolean>(false);
+  const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [userName, setUserName] = useState<string>(lang === 'ua' ? 'Користувач' : 'User');
   const [isEditingName, setIsEditingName] = useState(false);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
@@ -106,20 +112,16 @@ export default function App() {
   const calculatorRef = useRef<HTMLDivElement>(null);
 
   const handleToggleCalculator = () => {
-    const nextVal = !showCalculator;
-    setShowCalculator(nextVal);
-    if (nextVal) {
-      setTimeout(() => {
-        calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 120);
-    }
+    setShowCalculator(prev => {
+      const next = !prev;
+      if (next) setShowAnalytics(false);
+      return next;
+    });
   };
 
   const handleShowCalculator = () => {
     setShowCalculator(true);
-    setTimeout(() => {
-      calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
+    setShowAnalytics(false);
   };
 
   // Apply theme constraints
@@ -786,15 +788,28 @@ export default function App() {
   }
 
   // Render Main Cloud-Synchronized Workspace (For Logged in Users)
+  const isCalculatorPage = showCalculator || !profile.isCalculated;
+
   return (
     <div className={`min-h-screen flex flex-col md:flex-row font-sans transition-colors duration-300 ${
       isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-[#F8FAF9] text-[#1A1C1B]'
     }`}>
       
+      {/* Mobile Backdrop for Sidebar Drawer */}
+      {isMobileSidebarOpen && (
+        <div 
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden animate-fadeIn"
+        />
+      )}
+
       {/* Sidebar: User Parameters & Targets */}
-      <aside className={`w-full md:w-80 border-b md:border-b-0 md:border-r flex flex-col p-6 shrink-0 relative transition-colors duration-300 ${
-        isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#E2E8E4]'
-      }`}>
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] h-full flex flex-col p-6 overflow-y-auto shadow-2xl transition-transform duration-300 transform md:transform-none md:relative md:inset-auto md:w-80 md:h-auto md:shadow-none md:flex md:z-10 md:border-b-0
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#E2E8E4]'}
+        border-r
+      `}>
         <div className="mb-4 flex justify-between items-start">
           <div className="flex gap-2.5 items-center">
             <GlassmorphicAppleLogo size="sm" theme={isDark ? 'dark' : 'light'} />
@@ -805,17 +820,33 @@ export default function App() {
               <p className={`text-[10px] font-semibold mt-0.5 ${isDark ? 'text-zinc-500' : 'text-[#4A5D4E]'}`}>{t.appSubtitle}</p>
             </div>
           </div>
-          <button
-            onClick={handleToggleCalculator}
-            className={`p-2.5 rounded-xl transition-all cursor-pointer border ${
-              isDark 
-                ? 'bg-zinc-950 hover:bg-zinc-800 border-zinc-800 text-zinc-400 hover:text-[#89FFA0]' 
-                : 'bg-[#F3F7F4] hover:bg-[#DCEEE0] text-[#4A5D4E] hover:text-[#2D5A27] border-[#E2E8E4]'
-            }`}
-            title={lang === 'ua' ? 'Налаштування норми' : 'Calculator settings'}
-          >
-            <Settings className="w-4.5 h-4.5" />
-          </button>
+          
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleToggleCalculator}
+              className={`p-2.5 rounded-xl transition-all cursor-pointer border ${
+                isCalculatorPage
+                  ? isDark 
+                    ? 'bg-[#89FFA0]/20 border-[#89FFA0]/40 text-[#89FFA0]' 
+                    : 'bg-[#DCEEE0]/80 border-[#2D5A27]/20 text-[#2D5A27]'
+                  : isDark 
+                    ? 'bg-zinc-950 hover:bg-zinc-800 border-zinc-800 text-zinc-400 hover:text-[#89FFA0]' 
+                    : 'bg-[#F3F7F4] hover:bg-[#DCEEE0] text-[#4A5D4E] hover:text-[#2D5A27] border-[#E2E8E4]'
+              }`}
+              title={lang === 'ua' ? 'Налаштування норми' : 'Calculator settings'}
+            >
+              <Settings className={`w-4.5 h-4.5 ${isCalculatorPage ? 'animate-pulse' : ''}`} />
+            </button>
+
+            {/* mobile-only drawer close trigger */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden p-2 text-zinc-500 hover:text-rose-500 transition-all cursor-pointer border border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-xl"
+              title={lang === 'ua' ? 'Закрити' : 'Close'}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Controls Dock: active bilingual switches & visual mode switches */}
@@ -966,6 +997,31 @@ export default function App() {
           >
             <Scale className="w-3.5 h-3.5" />
             {t.recalculateGoals}
+          </button>
+
+          <button
+            onClick={() => {
+              setShowAnalytics(prev => {
+                const next = !prev;
+                if (next) setShowCalculator(false);
+                return next;
+              });
+            }}
+            id="view-analytics-toggle"
+            className={`hidden md:flex mt-2 w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm text-center items-center justify-center gap-1.5 border ${
+              showAnalytics
+                ? isDark 
+                  ? 'bg-amber-950/20 text-amber-400 border-amber-900/40 hover:bg-amber-950/30' 
+                  : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                : isDark 
+                  ? 'bg-zinc-950 border-zinc-800 text-[#89FFA0] hover:bg-zinc-900' 
+                  : 'bg-white text-[#2D5A27] border-[#E2E8E4] hover:bg-[#F3F7F4]'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            {showAnalytics 
+              ? (lang === 'ua' ? 'Назад до щоденника' : 'Back to Diary')
+              : (lang === 'ua' ? 'Історія та аналітика' : 'History & Analytics')}
           </button>
         </div>
         
@@ -1121,100 +1177,188 @@ export default function App() {
         <header className={`p-4 sm:p-8 flex-shrink-0 border-b transition-colors duration-300 ${
           isDark ? 'bg-[#18181B] border-zinc-800' : 'bg-white border-[#E2E8E4]'
         }`}>
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            
-            {/* User Custom Greetings */}
-            <div>
-              <div className="flex items-center gap-2 group">
-                <h2 className={`text-2xl sm:text-3xl font-light ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-                  {t.welcome}{' '}
-                  {isEditingName ? (
-                    <input
-                      type="text"
-                      id="username-edit-input"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      onBlur={() => saveName(userName)}
-                      onKeyDown={(e) => e.key === 'Enter' && saveName(userName)}
-                      autoFocus
-                      placeholder={t.renameInputPlaceholder}
-                      className={`font-semibold border-b focus:outline-none px-1 py-0.5 rounded text-xl sm:text-2xl max-w-[150px] ${
-                        isDark ? 'text-white border-[#89FFA0] bg-zinc-950/40' : 'text-black border-[#2D5A27] bg-zinc-50'
-                      }`}
-                    />
-                  ) : (
-                    <span 
-                      onClick={() => setIsEditingName(true)}
-                      className={`font-semibold border-b border-dashed cursor-pointer title-edit ${
-                        isDark 
-                          ? 'text-white border-zinc-750 hover:border-[#89FFA0]' 
-                          : 'text-[#1A1C1B] border-gray-300 hover:border-[#2D5A27]'
-                      }`}
-                      title={t.clickToRename}
-                    >
-                      {userName}
-                    </span>
-                  )}
+          {isCalculatorPage ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#2D5A27]'}`}>
+                  {lang === 'ua' ? 'Налаштування норми' : 'Target Norm Settings'}
                 </h2>
+                <p className={`text-xs font-semibold mt-1 ${isDark ? 'text-zinc-450' : 'text-[#4A5D4E]'}`}>
+                  {lang === 'ua' ? 'Розрахунок добової потреби калорій КБЖУ та цільових орієнтирів' : 'Calculate daily calorie budget, macro distributions and profile indicators'}
+                </p>
               </div>
-              <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-[#4A5D4E]'}`}>{t.welcomeSub}</p>
-            </div>
 
-            {/* Date-Picker Controls Selection */}
-            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              {profile.isCalculated && (
+                <button
+                  onClick={() => setShowCalculator(false)}
+                  className={`py-2 px-4 border rounded-xl transition-all cursor-pointer font-bold text-xs flex items-center gap-1.5 active:scale-95 ${
+                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-900' : 'bg-white border-[#E2E8E4] text-[#1A1C1B] hover:bg-[#F3F7F4]'
+                  }`}
+                >
+                  <ChevronLeft className="w-4 h-4 text-emerald-500" />
+                  <span>{lang === 'ua' ? 'Назад до щоденника' : 'Back to Diary'}</span>
+                </button>
+              )}
+            </div>
+          ) : showAnalytics ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#2D5A27]'}`}>
+                  {lang === 'ua' ? 'Історія та аналітика' : 'History & Analytics'}
+                </h2>
+                <p className={`text-xs font-semibold mt-1 ${isDark ? 'text-zinc-450' : 'text-[#4A5D4E]'}`}>
+                  {lang === 'ua' ? 'Моніторинг вашого прогресу, балансу КБЖУ та звичок харчування' : 'Track your nutrition milestones, calorie budgets, and habits'}
+                </p>
+              </div>
+
               <button
-                onClick={() => handleOffsetDate(-1)}
-                className={`p-2 border rounded-xl transition-all cursor-pointer active:scale-95 ${
+                onClick={() => setShowAnalytics(false)}
+                className={`py-2 px-4 border rounded-xl transition-all cursor-pointer font-bold text-xs flex items-center gap-1.5 active:scale-95 ${
                   isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-900' : 'bg-white border-[#E2E8E4] text-[#1A1C1B] hover:bg-[#F3F7F4]'
                 }`}
-                title={t.prevDay}
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4 text-emerald-500" />
+                <span>{lang === 'ua' ? 'Назад до щоденника' : 'Back to Diary'}</span>
               </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               
-              <div className={`relative flex items-center border px-3.5 py-1.5 rounded-xl gap-2 shadow-xs group font-semibold text-sm cursor-pointer ${
-                isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-white border-[#E2E8E4] text-[#1A1C1B]'
-              }`}>
-                <Calendar className={`w-4 h-4 shrink-0 col-span-1 ${isDark ? 'text-[#89FFA0]' : 'text-[#2D5A27]'}`} />
-                <span className={`text-xs font-semibold uppercase tracking-wider select-none pr-1 ${isDark ? 'text-white' : 'text-[#1A1C1B]'}`}>
-                  {(() => {
-                    if (!selectedDate) return '';
-                    const parts = selectedDate.split('-');
-                    if (parts.length === 3) {
-                      return `${parts[2]}.${parts[1]}.${parts[0]}`;
-                    }
-                    return selectedDate;
-                  })()}
-                </span>
-                <input
-                  type="date"
-                  id="date-picker-input"
-                  value={selectedDate}
-                  onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                />
+              {/* User Custom Greetings */}
+              <div className="flex flex-col sm:flex-row sm:items-start md:items-center gap-3 justify-between w-full sm:w-auto">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 group">
+                    <h2 className={`text-2xl sm:text-3xl font-light ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                      {t.welcome}{' '}
+                      {isEditingName ? (
+                        <input
+                          type="text"
+                          id="username-edit-input"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          onBlur={() => saveName(userName)}
+                          onKeyDown={(e) => e.key === 'Enter' && saveName(userName)}
+                          autoFocus
+                          placeholder={t.renameInputPlaceholder}
+                          className={`font-semibold border-b focus:outline-none px-1 py-0.5 rounded text-xl sm:text-2xl max-w-[150px] ${
+                            isDark ? 'text-white border-[#89FFA0] bg-zinc-950/40' : 'text-black border-[#2D5A27] bg-zinc-50'
+                          }`}
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => setIsEditingName(true)}
+                          className={`font-semibold border-b border-dashed cursor-pointer title-edit ${
+                            isDark 
+                              ? 'text-white border-zinc-750 hover:border-[#89FFA0]' 
+                              : 'text-[#1A1C1B] border-gray-300 hover:border-[#2D5A27]'
+                          }`}
+                          title={t.clickToRename}
+                        >
+                          {userName}
+                        </span>
+                      )}
+                    </h2>
+                  </div>
+                  <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-[#4A5D4E]'}`}>{t.welcomeSub}</p>
+                </div>
+
+                {/* Mobile-only Actions Column (stacked) */}
+                <div className="flex flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 md:hidden">
+                  <button
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer w-full ${
+                      isDark 
+                        ? 'bg-[#89FFA0]/10 border-[#89FFA0]/20 text-[#89FFA0] hover:bg-[#89FFA0]/20' 
+                        : 'bg-[#DCEEE0]/80 border-[#2D5A27]/20 text-[#2D5A27] hover:bg-[#DCEEE0]'
+                    }`}
+                  >
+                    <Scale className="w-4 h-4 text-emerald-555 dark:text-[#89FFA0]" />
+                    <span>{lang === 'ua' ? 'Цілі та Норми' : 'Goals & Targets'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowAnalytics(prev => {
+                        const next = !prev;
+                        if (next) setShowCalculator(false);
+                        return next;
+                      });
+                    }}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer w-full ${
+                      showAnalytics
+                        ? isDark 
+                          ? 'bg-amber-950/20 text-amber-400 border-amber-900/40 hover:bg-amber-950/30' 
+                          : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                        : isDark 
+                          ? 'bg-zinc-900 border-zinc-850 text-[#89FFA0] hover:bg-zinc-850' 
+                          : 'bg-white text-[#2D5A27] border-[#E2E8E4] hover:bg-[#F3F7F4]'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4 text-emerald-550 dark:text-[#89FFA0]" />
+                    <span>
+                      {showAnalytics 
+                        ? (lang === 'ua' ? 'Назад до щоденника' : 'Back to Diary')
+                        : (lang === 'ua' ? 'Історія та аналітика' : 'History & Analytics')}
+                    </span>
+                  </button>
+                </div>
               </div>
 
-              <button
-                onClick={() => handleOffsetDate(1)}
-                className={`p-2 border rounded-xl transition-all cursor-pointer active:scale-95 ${
-                  isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-900' : 'bg-white border-[#E2E8E4] text-[#1A1C1B] hover:bg-[#F3F7F4]'
-                }`}
-                title={t.nextDay}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              {/* Date-Picker Controls Selection */}
+              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                <button
+                  onClick={() => handleOffsetDate(-1)}
+                  className={`p-2 border rounded-xl transition-all cursor-pointer active:scale-95 ${
+                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-900' : 'bg-white border-[#E2E8E4] text-[#1A1C1B] hover:bg-[#F3F7F4]'
+                  }`}
+                  title={t.prevDay}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                <div className={`relative flex items-center border px-3.5 py-1.5 rounded-xl gap-2 shadow-xs group font-semibold text-sm cursor-pointer ${
+                  isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-white border-[#E2E8E4] text-[#1A1C1B]'
+                }`}>
+                  <Calendar className={`w-4 h-4 shrink-0 col-span-1 ${isDark ? 'text-[#89FFA0]' : 'text-[#2D5A27]'}`} />
+                  <span className={`text-xs font-semibold uppercase tracking-wider select-none pr-1 ${isDark ? 'text-white' : 'text-[#1A1C1B]'}`}>
+                    {(() => {
+                      if (!selectedDate) return '';
+                      const parts = selectedDate.split('-');
+                      if (parts.length === 3) {
+                        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+                      }
+                      return selectedDate;
+                    })()}
+                  </span>
+                  <input
+                    type="date"
+                    id="date-picker-input"
+                    value={selectedDate}
+                    onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                  />
+                </div>
 
-          </div>
+                <button
+                  onClick={() => handleOffsetDate(1)}
+                  className={`p-2 border rounded-xl transition-all cursor-pointer active:scale-95 ${
+                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-900' : 'bg-white border-[#E2E8E4] text-[#1A1C1B] hover:bg-[#F3F7F4]'
+                  }`}
+                  title={t.nextDay}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+            </div>
+          )}
         </header>
 
         {/* Dynamic Main Workspace content structure */}
         <div className="p-4 sm:p-8 space-y-6">
           
-          {/* Tdee Calculator Expanded View */}
-          {(showCalculator || !profile.isCalculated) && (
-            <div ref={calculatorRef} className="scroll-mt-6 animate-fadeIn">
+          {isCalculatorPage ? (
+            <div className="animate-fadeIn">
               <TdeeCalculator
                 currentProfile={profile}
                 onSaveProfile={handleSaveProfile}
@@ -1235,47 +1379,58 @@ export default function App() {
                 </div>
               )}
             </div>
+          ) : showAnalytics ? (
+            <div className="animate-fadeIn">
+              <HistoryAnalytics 
+                diaryItems={diaryItems}
+                profile={profile}
+                lang={lang}
+                theme={theme}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Interactive Core grid: Photo Scan + Summary logs */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* Photo Scan block */}
+                <div className="lg:col-span-12 xl:col-span-7 space-y-6">
+                  <FoodUploader 
+                    activeDate={selectedDate} 
+                    onSaveFoodItem={handleSaveFoodItem} 
+                    lang={lang}
+                    theme={theme}
+                  />
+                  
+                  <DailyStats 
+                    targetKcal={profile.targetKcal || 2300}
+                    targetProtein={profile.targetProtein || 120}
+                    targetFat={profile.targetFat || 70}
+                    targetCarbs={profile.targetCarbs || 270}
+                    consumedKcal={consumedKcal}
+                    consumedProtein={consumedProtein}
+                    consumedFat={consumedFat}
+                    consumedCarbs={consumedCarbs}
+                    lang={lang}
+                    theme={theme}
+                  />
+                </div>
+
+                {/* Daily History sidebar/log column */}
+                <div className="lg:col-span-12 xl:col-span-5 h-full">
+                  <FoodDiaryList 
+                    items={filteredItems} 
+                    onDeleteItem={handleDeleteFoodItem} 
+                    onUpdateItem={handleUpdateFoodItem}
+                    selectedDate={selectedDate}
+                    lang={lang}
+                    theme={theme}
+                  />
+                </div>
+
+              </div>
+            </>
           )}
-
-          {/* Interactive Core grid: Photo Scan + Summary logs */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Photo Scan block */}
-            <div className="lg:col-span-12 xl:col-span-7 space-y-6">
-              <FoodUploader 
-                activeDate={selectedDate} 
-                onSaveFoodItem={handleSaveFoodItem} 
-                lang={lang}
-                theme={theme}
-              />
-              
-              <DailyStats 
-                targetKcal={profile.targetKcal || 2300}
-                targetProtein={profile.targetProtein || 120}
-                targetFat={profile.targetFat || 70}
-                targetCarbs={profile.targetCarbs || 270}
-                consumedKcal={consumedKcal}
-                consumedProtein={consumedProtein}
-                consumedFat={consumedFat}
-                consumedCarbs={consumedCarbs}
-                lang={lang}
-                theme={theme}
-              />
-            </div>
-
-            {/* Daily History sidebar/log column */}
-            <div className="lg:col-span-12 xl:col-span-5 h-full">
-              <FoodDiaryList 
-                items={filteredItems} 
-                onDeleteItem={handleDeleteFoodItem} 
-                onUpdateItem={handleUpdateFoodItem}
-                selectedDate={selectedDate}
-                lang={lang}
-                theme={theme}
-              />
-            </div>
-
-          </div>
 
           {/* Footer attribution */}
           <footer className={`mt-8 pt-6 border-t text-center text-xs font-medium transition-colors ${

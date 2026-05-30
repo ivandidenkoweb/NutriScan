@@ -21,6 +21,7 @@ All user data is fully synced instantly via Google Firebase Authentication & Fir
 - **Smart Text Analysis**: Describe your meal in plain words, and the AI nutritionist will break down individual nutrients.
 - **Biometric TDEE Calculator**: Enter your physical properties (height, weight, age, activity level) and customized targets (weight loss, maintenance, or weight gain) to instantly establish personalized daily limits.
 - **Intuitive Nutrient Progress**: Interactive, real-time charts displaying consumed vs. remaining carbs, proteins, fats, and total calories.
+- **Mobile-First Experience**: A fully responsive slide-out drawer containing "Goals & Targets", and clean, stacked mobile navigation controls for instant access to "History & Analytics" on smaller screens.
 - **Quick Water Tracker**: A fast, convenient tap-to-add tracker with custom benchmarks to ensure regular hydration.
 - **Bilingual Interface**: Seamless Ukranian (**УКР**) and English (**ENG**) toggles with local client state memory.
 - **Dynamic Color Themes**: Flexible light & eye-safe dark mode preferences to fit your ambient environment.
@@ -46,7 +47,7 @@ All user data is fully synced instantly via Google Firebase Authentication & Fir
 - **Secure API Design**: Moving vulnerable API keys to custom Node.js/Express proxy endpoints, preventing browser credential exposure.
 - **Real-Time Data Streaming**: Establishing synchronized, real-time Firestore collection snapshot listeners that instantly auto-save diaries.
 - **Smooth Content Transitions**: Incorporating modular spring physics layouts for list additions, calculator toggles, and state transitions.
-- **Responsive Workspace**: Building complex, adaptive structures designed for desktop viewports down to single-hand mobile usage.
+- **Responsive Workspace**: Designing adaptive layouts optimized for desktop down to mobile viewports, implementing a custom gesture-friendly mobile drawer, stacked mobile action menus, and backdrop filters for space-efficient navigation.
 - **Localization Integration**: Mapping and managing deep bilingual string dictionaries across local schemas.
 
 ## Getting Started
